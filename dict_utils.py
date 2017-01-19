@@ -39,7 +39,6 @@ arc_list = ['S%i%i' % (ii,ii+1) for ii in xrange(1,8)]
 del ii
 arc_list.append('S81')
 
-
 re_sb = re.compile('^sb\+(\d+)_hrs$')
 def values_over_time(hl_dict, *keys):
 
