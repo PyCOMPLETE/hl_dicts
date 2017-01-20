@@ -11,4 +11,15 @@ It relies on the LHCMeasurementTools repository.
   - More general functions to merge and mask dictionaries.
  
 - large_hl_dict_201[56].pkl:
-  - Created by 025_ script.
+  - Created by 025\_ script.
+  
+  Content:
+  - Numpy arrays
+  - Fill max energy
+  - Fill number
+  - Filling pattern
+  - BPI (if possible)
+  - At start_ramp, stop_squeeze, stable_beams and every hour after stable_beams (max 24)
+    - Intensity: per beam and total
+    - Heat loads : Impedance, SR, total Model, arcs, quads, bunch length, number of bunches
+    - Filled with zeros after the end of the fill
