@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import re
 
-from hl_dicts.LHC_Heat_load_dict import main_dict
+from LHC_Heat_load_dict import main_dict
 from LHCMeasurementTools.mystyle import colorprog
 
 plt.rcParams['lines.markersize'] = 10
@@ -32,7 +32,7 @@ for ctr, (reg, title, ylim) in enumerate(zip(re_list, title_list, ylim_list)):
     sp.set_ylabel('Cumulated HL [J]')
     sp.set_title(title)
     sp.grid(True)
-    
+
     sp2 = sp.twinx()
     sp2.set_ylabel('Normalized HL [W/p+]')
     sp2.set_ylim(*ylim)
@@ -61,7 +61,7 @@ for ctr, (reg, title, ylim) in enumerate(zip(re_list, title_list, ylim_list)):
     sp.set_ylabel('Normalized HL [W/p+]')
     sp.set_title(title)
     sp.grid(True)
-    
+
     good_keys = filter(regex.match, int_dict.keys())
     for key_ctr, key in enumerate(good_keys):
         item = int_dict[key]
@@ -72,9 +72,9 @@ for ctr, (reg, title, ylim) in enumerate(zip(re_list, title_list, ylim_list)):
         color = colorprog(key_ctr,8)
         norm_hl = main_dict['stable_beams']['heat_load'][key]/main_dict['stable_beams']['intensity']['total']
         sp.plot(np.cumsum(item), norm_hl,'.', label=key, color=color)
-        if key_ctr == 0: 
+        if key_ctr == 0:
             label = 'Begin of 2016'
-        else: 
+        else:
             label = None
         sp.axvline(year_change, color=color, lw=2, label=label)
     sp.legend(bbox_to_anchor=(1.15,1))

@@ -52,7 +52,6 @@ def values_over_time(hl_dict, *keys):
             hrs.append(int(info.group(1)))
     hrs_keys = zip(hrs, tt_keys)
     hrs_keys.sort(key=lambda x: x[0])
-    del key, info, hrs, tt_keys, re_sb
 
     output = []
     for fill_ctr, fill in enumerate(hl_dict['filln']):
