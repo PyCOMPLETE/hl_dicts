@@ -44,11 +44,11 @@ fig2 = ms.figure('Arc heat loads')
 sp5 = plt.subplot(3,1,1, sharex=None)
 sp1 = sp5
 sp5.grid('on')
-sp5.set_ylim(0,180)
+sp5.set_ylim(0,200)
 
 sp6 = plt.subplot(3,1,2, sharex=sp1)
 sp6.grid('on')
-sp6.set_ylim(0, 5e-13)
+sp6.set_ylim(0, 6e-13)
 
 sp_avg = plt.subplot(3,1,3, sharex=sp1)
 sp_avg.grid('on')

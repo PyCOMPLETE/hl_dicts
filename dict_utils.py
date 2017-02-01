@@ -10,30 +10,36 @@ def load_dict(filename):
 
 def mask_dict(dictionary, mask):
     new_dict = copy.deepcopy(dictionary)
+
+    def _mask_recursively(dictionary, mask):
+        for key in dictionary:
+            if type(dictionary[key]) is dict:
+                _mask_recursively(dictionary[key],mask)
+            else:
+                dictionary[key] = dictionary[key][mask]
+
     _mask_recursively(new_dict,mask)
     return new_dict
 
-def _mask_recursively(dictionary, mask):
-    for key in dictionary:
-        if type(dictionary[key]) is dict:
-            _mask_recursively(dictionary[key],mask)
-        else:
-            dictionary[key] = dictionary[key][mask]
 
-def merge_dicts(dict1,dict2):
+def operate_on_dicts(dict1, dict2, operator):
     new_dict = copy.deepcopy(dict1)
-    _merge_dicts_recursively(dict1,dict2,new_dict)
+
+    def recurse(dict1, dict2, new_dict):
+        for key in dict1:
+            tt = type(dict1[key])
+            if tt is dict:
+                recurse(dict1[key],dict2[key], new_dict[key])
+            elif tt is np.ndarray:
+                new_dict[key] = operator(dict1[key], dict2[key])
+            else:
+                raise ValueError('Unexpected type %s behind key %s!' % (tt, key))
+    recurse(dict1, dict2, new_dict)
     return new_dict
 
-def _merge_dicts_recursively(dict1, dict2, new_dict):
-    for key in dict1:
-        tt = type(dict1[key])
-        if tt is dict:
-            _merge_dicts_recursively(dict1[key],dict2[key], new_dict[key])
-        elif tt is np.ndarray:
-            new_dict[key] = np.concatenate([dict1[key], dict2[key]])
-        else:
-            raise ValueError('Unexpected type %s behind key %s!' % (tt, key))
+def merge_dicts(dict1, dict2):
+    return operate_on_dicts(dict1, dict2, lambda x,y: np.concatenate([x,y]))
+
 
 arc_list = ['S%i%i' % (ii,ii+1) for ii in xrange(1,8)]
 del ii
