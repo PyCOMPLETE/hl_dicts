@@ -1,16 +1,20 @@
 from __future__ import print_function, division
 import operator
+import argparse
 
 import matplotlib.pyplot as plt
-#import matplotlib.ticker as ticker
 import numpy as np
-import operator
 
 import LHCMeasurementTools.mystyle as ms
-#import LHCMeasurementTools.TimestampHelpers as TH
-#import LHCMeasurementTools.LHC_Heatloads as hl
+import LHCMeasurementTools.savefig as sf
 from LHC_Heat_load_dict import mask_dict, main_dict, arc_list
 import dict_utils as du
+
+ms.mystyle_arial(20)
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--pdsave', help='Save in pdijksta dir', action='store_true')
+args = parser.parse_args()
 
 plt.close('all')
 moment = 'stop_squeeze'
@@ -22,7 +26,8 @@ tot_int = main_dict[moment]['intensity']['total']
 
 figures = []
 def hl_normalized_delta(input_arrays, average, title, labels, suptitle=False):
-    ms.figure(title, figures)
+    fig = ms.figure(title, figures)
+    fig.subplots_adjust(left=0.06, right=0.75)
     if suptitle:
         plt.suptitle(suptitle, fontsize=20)
     sp1 = None
@@ -52,7 +57,7 @@ def hl_normalized_delta(input_arrays, average, title, labels, suptitle=False):
 
     plt.setp(sp5.get_xticklabels(), visible = False)
     plt.setp(sp6.get_xticklabels(), visible = False)
-    sp6.legend(bbox_to_anchor=(1.10, 1.04))
+    sp6.legend(bbox_to_anchor=(1.30, 1.04))
     return sp5, sp6, sp_avg
 
 
@@ -133,6 +138,7 @@ for arr_list, big_title in zip((bins, arcs), ('Bins', 'Arcs')):
         binned_arrays = []
         labels = []
         tot_average = 0
+        tot_divisor = 0
         for arr_ctr, bin_ in enumerate(arr_list):
             arr = 0
             divisor = 0
@@ -140,14 +146,15 @@ for arr_list, big_title in zip((bins, arcs), ('Bins', 'Arcs')):
                 this_hl = recalc_dict[arc][cell]
                 divisor += np.array(np.isfinite(this_hl), int)
                 arr += np.nan_to_num(this_hl)
+                tot_average += arr
+                tot_divisor += divisor
             arr /= divisor
-            tot_average += arr
             binned_arrays.append(arr)
             if arr_list is bins:
                 labels.append('%i cells' % len(bin_))
             else:
                 labels.append(arc_list[arr_ctr])
-        tot_average /= len(arr_list)
+        tot_average /= tot_divisor
 
         title = ' '.join((big_title, title))
         sp5, sp6, sp_avg = hl_normalized_delta(binned_arrays, tot_average, title, labels, suptitle=title)
@@ -155,5 +162,9 @@ for arr_list, big_title in zip((bins, arcs), ('Bins', 'Arcs')):
             sp5.set_ylim(-10, 80)
             sp6.set_ylim(-.5e-13,2.5e-13)
             sp_avg.set_ylim(-1e-13,1e-13)
+
+if args.pdsave:
+    for fig in figures:
+        sf.pdijksta(fig)
 
 plt.show()
