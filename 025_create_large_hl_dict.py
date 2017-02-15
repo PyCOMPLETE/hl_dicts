@@ -209,7 +209,7 @@ for filln in fills_0:
         while n_tries < 5:
             n_tries += 1
             try:
-                qbs_ob = qf.compute_qbs_fill(filln)
+                qbs_ob = qf.compute_qbs_fill(filln, recompute_if_missing=True)
                 break
             except IOError as e:
                 log_print('Fill %i: No recomputed data: %s!' % (filln,e))
@@ -219,19 +219,41 @@ for filln in fills_0:
             process_fill = False
             log_print('Fill %i: Recomputed data read attempt failed!' % filln)
 
-        if process_fill:
-            lhc_hl_dict = qf.lhc_arcs(qbs_ob)
-            arc_averages = qf.compute_qbs_arc_avg(qbs_ob)
+    # Special cells
+    if process_fill:
+        n_tries = 0
+        while n_tries < 5:
+            n_tries += 1
+            try:
+                qbs_ob_special = qf.special_qbs_fill_aligned(filln, recompute_if_missing=True)
+                break
+            except IOError as e:
+                log_print('Fill %i: No special cell recomputed data: %s!' % (filln,e))
+                # Suspicious fails of read attempts -> try once more
+                time.sleep(5)
+        else:
+            process_fill = False
+            log_print('Fill %i: Recomputed special cell data read attempt failed!' % filln)
+
+    if process_fill:
+        lhc_hl_dict = qf.lhc_arcs(qbs_ob)
+        arc_averages = qf.compute_qbs_arc_avg(qbs_ob)
+
+
+    ## Allocate objects that are used later
+    if process_fill:
+        try:
+            en_ob      = energy(fill_dict, beam=1)
+            bct_bx     = {beam_n: BCT    (fill_dict, beam=beam_n) for beam_n in (1,2)}
+            blength_bx = {beam_n: blength(fill_dict, beam=beam_n) for beam_n in (1,2)}
+            fbct_bx    = {beam_n: FBCT   (fill_dict, beam=beam_n) for beam_n in (1,2)}
+        except ValueError as e:
+            log_print('Fill %i: %s' % (filln, e))
+            process_fill = False
 
     # Main part - obtain and store the variables of interest
     if process_fill:
         log_print('Fill %i is being processed.' % filln)
-
-        ## Allocate objects that are used later
-        en_ob      = energy(fill_dict, beam=1)
-        bct_bx     = {beam_n: BCT(fill_dict, beam=beam_n)     for beam_n in (1,2)}
-        blength_bx = {beam_n: blength(fill_dict, beam=beam_n) for beam_n in (1,2)}
-        fbct_bx    = {beam_n: FBCT(fill_dict, beam=beam_n)    for beam_n in (1,2)}
 
         ## Populate output dict
 
@@ -335,7 +357,7 @@ for filln in fills_0:
             this_add_to_dict(tot_imp+tot_sr, ['heat_load', 'total_model'])
 
             # Heat loads
-            for obj, main_key in zip([qbs_ob, arc_averages], ['all_cells', 'arc_averages']):
+            for obj, main_key in zip([qbs_ob, arc_averages, qbs_ob_special], ['all_cells', 'arc_averages', 'special_cells']):
                 index = np.argmin(np.abs(obj.timestamps - tt))
                 mask_offset = np.logical_and(obj.timestamps < t_start_injphys, obj.timestamps > t_start_injphys - average_offset_seconds)
                 for key, arr in obj.dictionary.iteritems():
