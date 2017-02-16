@@ -7,8 +7,9 @@ import numpy as np
 
 import LHCMeasurementTools.mystyle as ms
 import LHCMeasurementTools.savefig as sf
-from LHC_Heat_load_dict import mask_dict, main_dict, arc_list
+from LHC_Heat_load_dict import mask_dict, main_dict
 import dict_utils as du
+from config_qbs import config_qbs as cq
 
 ms.mystyle_arial(20)
 
@@ -61,12 +62,13 @@ def hl_normalized_delta(input_arrays, average, title, labels, suptitle=False):
     return sp5, sp6, sp_avg
 
 
-recalc_dict = main_dict[moment]['heat_load_re']
+recalc_dict = main_dict[moment]['heat_load']['all_cells']
 n_bins = 10+1
 
 arc_cell_hls = []
-for arc, cell_dict in recalc_dict.iteritems():
-    for cell, hl_arr in cell_dict.iteritems():
+for arc, cell_list in du.arc_cells_dict.iteritems():
+    for cell in cell_list:
+        hl_arr = recalc_dict[cell]
         arc_cell_hls.append((arc, cell, np.mean(hl_arr[-10:])))
 
 arc_cell_hls = filter(lambda x: x[2] > 0, arc_cell_hls)
@@ -74,7 +76,7 @@ arc_cell_hls.sort(key=operator.itemgetter(2))
 
 complete_hl = np.zeros((len(hl_arr), len(arc_cell_hls)), float)
 for ctr, (arc, cell, _) in enumerate(arc_cell_hls):
-    complete_hl[:,ctr] = recalc_dict[arc][cell]
+    complete_hl[:,ctr] = recalc_dict[cell]
 cell_average = np.nanmean(complete_hl, axis=1)
 
 indices = map(int, np.linspace(0, len(arc_cell_hls), n_bins))
@@ -87,7 +89,7 @@ for ctr in xrange(len(indices)-1):
     divisor = 0
     for ctr2 in xrange(start, stop):
         arc, cell, _ = arc_cell_hls[ctr2]
-        this_hl = recalc_dict[arc][cell]
+        this_hl = recalc_dict[cell]
         divisor += np.array(np.isfinite(this_hl), int)
         arr += np.nan_to_num(this_hl)
     arr /= divisor
@@ -99,7 +101,7 @@ hl_normalized_delta(binned_arrays, cell_average, 'All cells at %s' % moment, lab
 selected, labels = [], []
 for i in xrange(0,len(arc_cell_hls), 50):
     arc, cell, _ = arc_cell_hls[i]
-    selected.append(recalc_dict[arc][cell])
+    selected.append(recalc_dict[cell])
     labels.append(cell)
 
 
@@ -118,17 +120,16 @@ for arc, cell, hl in arc_cell_hls:
     bin_.append((arc,cell))
 
 
-dict_stop_squeeze   = main_dict['stop_squeeze']['heat_load_re']
-dict_start_ramp     = main_dict['start_ramp']['heat_load_re']
+dict_stop_squeeze   = main_dict['stop_squeeze']['heat_load']['all_cells']
+dict_start_ramp     = main_dict['start_ramp']['heat_load']['all_cells']
 dict_diff           = du.operate_on_dicts(dict_stop_squeeze, dict_start_ramp, operator.sub)
 
 titles = ('At stop_squeeze', 'At start ramp', 'Difference after ramp')
 
 arcs = []
-for arc in arc_list:
+for arc, cells in du.arc_cells_dict.iteritems():
     this_arc = []
     arcs.append(this_arc)
-    cells = recalc_dict[arc].keys()
     for cell in cells:
         this_arc.append((arc, cell))
 
@@ -143,7 +144,7 @@ for arr_list, big_title in zip((bins, arcs), ('Bins', 'Arcs')):
             arr = 0
             divisor = 0
             for arc, cell in bin_:
-                this_hl = recalc_dict[arc][cell]
+                this_hl = recalc_dict[cell]
                 divisor += np.array(np.isfinite(this_hl), int)
                 arr += np.nan_to_num(this_hl)
                 tot_average += arr
@@ -153,7 +154,7 @@ for arr_list, big_title in zip((bins, arcs), ('Bins', 'Arcs')):
             if arr_list is bins:
                 labels.append('%i cells' % len(bin_))
             else:
-                labels.append(arc_list[arr_ctr])
+                labels.append(cq.arc_list[arr_ctr])
         tot_average /= tot_divisor
 
         title = ' '.join((big_title, title))

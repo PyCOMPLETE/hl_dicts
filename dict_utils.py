@@ -1,6 +1,7 @@
 import re
 import copy
 import cPickle
+from config_qbs import config_qbs as cq
 
 import numpy as np
 
@@ -41,11 +42,6 @@ def merge_dicts(dict1, dict2):
     return operate_on_dicts(dict1, dict2, lambda x,y: np.concatenate([x,y]))
 
 
-arc_list = ['S%i%i' % (ii,ii+1) for ii in xrange(1,8)]
-del ii
-arc_list.append('S81')
-
-
 re_sb = re.compile('^sb\+(\d+)_hrs$')
 def values_over_time(hl_dict, *keys):
 
@@ -72,3 +68,30 @@ def values_over_time(hl_dict, *keys):
                 yy.append(val)
         output.append(np.array([xx,yy]))
     return output
+
+
+def get_matching_keys(hl_dict, regex):
+    hl_dict = hl_dict['hl_integrated']['all_cells']
+    list_ = filter(regex.match, hl_dict.keys())
+    return list_
+
+re_q6 = re.compile('^06[LR][1528]_\d{3}$')
+re_q5 = re.compile('^05[LR][1528]_\d{3}$')
+re_q4 = re.compile('^04[LR][1528]_\d{3}$')
+def q6_keys_list(hl_dict):
+    return get_matching_keys(hl_dict, re_q6)
+def q5_keys_list(hl_dict):
+    return get_matching_keys(hl_dict, re_q5)
+def q4_keys_list(hl_dict):
+    return get_matching_keys(hl_dict, re_q4)
+
+arc_cells_dict = {}
+for cell, type_, sector in zip(cq.Cell_list, cq.Type_list, cq.Sector_list):
+    sector_str = 'Arc_' + sector
+    if sector_str not in arc_cells_dict:
+        arc_cells_dict[sector_str] = list_ = []
+    if type_ == 'ARC':
+        list_.append(cell)
+del cell, type_, sector, list_, cq
+
+

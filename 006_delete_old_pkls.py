@@ -35,8 +35,8 @@ if __name__ == '__main__':
     for _file in sorted(to_delete):
         print(_file)
 
+    backup()
     inp = raw_input('y/n')
     if inp == 'y':
-        backup()
         delete()
 

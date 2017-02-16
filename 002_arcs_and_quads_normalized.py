@@ -1,5 +1,4 @@
 from __future__ import print_function, division
-import re
 
 import matplotlib.pyplot as plt
 #import matplotlib.ticker as ticker
@@ -10,6 +9,7 @@ from LHCMeasurementTools.mystyle import colorprog
 import LHCMeasurementTools.TimestampHelpers as TH
 import LHCMeasurementTools.LHC_Heatloads as HL
 from LHC_Heat_load_dict import mask_dict, main_dict, arc_list
+import dict_utils as du
 
 plt.close('all')
 moment = 'stop_squeeze'
@@ -68,7 +68,7 @@ zeros = []
 
 average, divisor = 0, 0
 for key in arc_list:
-    hl = main_dict[moment]['heat_load'][key]
+    hl = main_dict[moment]['heat_load']['arc_averages'][key]
     average += np.nan_to_num(hl)
     divisor += np.isfinite(hl)
 average /= divisor
@@ -80,7 +80,7 @@ sp_avg.plot(x_axis, np.zeros_like(average), '.', label='Average', color='black',
 
 for arc_ctr, key in enumerate(arc_list):
     color = colorprog(arc_ctr, 8)
-    arc_hl = main_dict[moment]['heat_load'][key]
+    arc_hl = main_dict[moment]['heat_load']['arc_averages'][key]
 
     sp5.plot(x_axis, arc_hl, '.', label=key, color=color, markersize=markersize)
     sp6.plot(x_axis, arc_hl/tot_int, '.', label=key, color=color, markersize=markersize)
@@ -117,11 +117,10 @@ else:
     sp6.set_xlabel('Fill nr')
 
 # Quads
-hl_keys = main_dict[moment]['heat_load'].keys()
-re_q6 = re.compile('^Q6')
-quad_keys = filter(re_q6.match, hl_keys)
+all_cells_dict = main_dict[moment]['heat_load']['all_cells']
+quad_keys = du.q6_keys_list(main_dict)
 def get_len(q6_str):
-    q6_nr = int(q6_str[-1])
+    q6_nr = int(q6_str[3])
     return HL.magnet_length['Q6s_IR%i' % q6_nr][0]
 quad_lens = map(get_len, quad_keys)
 
@@ -147,7 +146,7 @@ for sp in sp5, sp6, sp_avg:
 
 average, divsior = 0,0
 for key, len_ in zip(quad_keys, quad_lens):
-    hl = main_dict[moment]['heat_load'][key]/len_
+    hl = all_cells_dict[key]/len_
     average += np.nan_to_num(hl)
     divsior += np.isfinite(hl)
 average /= divisor
@@ -158,14 +157,14 @@ sp_avg.plot(x_axis, np.zeros_like(average), '.', label='Average', color='black',
 
 for ctr, (key, len_) in enumerate(zip(quad_keys, quad_lens)):
     color = colorprog(ctr, quad_keys)
-    this_hl = main_dict[moment]['heat_load'][key]/len_
+    this_hl = all_cells_dict[key]/len_
 
     sp5.plot(x_axis, this_hl, '.', label=key, color=color, markersize=markersize)
     sp6.plot(x_axis, this_hl/tot_int, '.', label=key, color=color, markersize=markersize)
     sp_avg.plot(x_axis, (this_hl-average)/tot_int, '.', label=key, color=color, markersize=markersize)
 
     xx = tot_int/(main_dict[moment]['n_bunches']['b1']+main_dict[moment]['n_bunches']['b2'])/1e11
-    yy = this_hl - main_dict[moment]['heat_load']['total_model']*len_
+    yy = this_hl - main_dict[moment]['heat_load']['total_model']
     fit = np.polyfit(xx,yy,1)
     yy_fit = np.poly1d(fit)
     xx_fit = np.arange(0.4, 2.5, 0.1)
