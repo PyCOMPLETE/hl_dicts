@@ -22,6 +22,7 @@ def delete():
         git = git_cmd % file_
         print(git)
         os.system(git)
+        os.system('rm %s' % file_)
 
 def backup():
     print('Backup data to eos!')
