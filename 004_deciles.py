@@ -141,6 +141,8 @@ for arr_list, big_title in zip((bins, arcs), ('Bins', 'Arcs')):
         tot_average = 0
         tot_divisor = 0
         for arr_ctr, bin_ in enumerate(arr_list):
+            if len(bin_) < 5:
+                continue
             arr = 0
             divisor = 0
             for arc, cell in bin_:
