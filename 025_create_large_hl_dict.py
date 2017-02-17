@@ -3,8 +3,10 @@ import cPickle
 import re
 import time
 import os
-import numpy as np
+import sys
 import argparse
+
+import numpy as np
 
 import LHCMeasurementTools.TimberManager as tm
 import LHCMeasurementTools.LHC_Heatloads as hl
@@ -74,13 +76,13 @@ filling_pattern_raw = tm.parse_timber_file(filling_pattern_csv, verbose=False)
 key = filling_pattern_raw.keys()[0]
 filling_pattern_ob = filling_pattern_raw[key]
 
-# Arc correction factors
-arc_correction_factor_list = hl.arc_average_correction_factors()
-arcs_variable_list = hl.average_arcs_variable_list()
-first_correct_filln = 4474 # from 016_
-def correct_hl(heatloads):
-    for factor, arc_variable in zip(arc_correction_factor_list, arcs_variable_list):
-        heatloads.timber_variables[arc_variable].values *= factor
+## Arc correction factors (logged data only)
+#arc_correction_factor_list = hl.arc_average_correction_factors()
+#arcs_variable_list = hl.average_arcs_variable_list()
+#first_correct_filln = 4474 # from 016_
+#def correct_hl(heatloads):
+#    for factor, arc_variable in zip(arc_correction_factor_list, arcs_variable_list):
+#        heatloads.timber_variables[arc_variable].values *= factor
 
 # Other functions
 def add_to_dict(dictionary, value, keys, zero=False):
@@ -240,7 +242,6 @@ for filln in fills_0:
     if process_fill:
         arc_averages = {use_dP: qf.compute_qbs_arc_avg(qbs_ob[use_dP]) for use_dP in (True, False)}
 
-
     ## Allocate objects that are used later
     if process_fill:
         try:
@@ -383,13 +384,21 @@ for filln in fills_0:
                         hl = arr[index]
                     this_add_to_dict(hl, ['heat_load', main_key, key])
 
-
+# Lists to np arrays
 n_fills = len(output_dict['filln'])
 cast_to_na_recursively(output_dict, assure_length=n_fills)
 
+# Metadata
+with open(logfile, 'r') as f:
+    metadata = '%s\n' % sys.argv
+    metadata += f.readlines()
+output_dict['LOGFILE'] = metadata
+
+# Save dict to pkl
 with open(pkl_file_name, 'w') as f:
     cPickle.dump(output_dict, f, protocol=-1)
 
+# Symlink latest pkl
 if not args.o:
     os.remove(latest_pkl)
     os.symlink(os.path.basename(pkl_file_name), latest_pkl)

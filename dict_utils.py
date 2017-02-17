@@ -13,11 +13,13 @@ def mask_dict(dictionary, mask):
     new_dict = copy.deepcopy(dictionary)
 
     def _mask_recursively(dictionary, mask):
-        for key in dictionary:
-            if type(dictionary[key]) is dict:
-                _mask_recursively(dictionary[key],mask)
+        for key, value in dictionary.iteritems():
+            if type(value) is dict:
+                _mask_recursively(value,mask)
+            elif type(value) is str:
+                pass
             else:
-                dictionary[key] = dictionary[key][mask]
+                dictionary[key] = value[mask]
 
     _mask_recursively(new_dict,mask)
     return new_dict
@@ -33,6 +35,8 @@ def operate_on_dicts(dict1, dict2, operator):
                 recurse(dict1[key],dict2[key], new_dict[key])
             elif tt is np.ndarray:
                 new_dict[key] = operator(dict1[key], dict2[key])
+            elif tt is str:
+                pass
             else:
                 raise ValueError('Unexpected type %s behind key %s!' % (tt, key))
     recurse(dict1, dict2, new_dict)
