@@ -127,7 +127,7 @@ log_print('Offset is subtracted?: %s' % subtract_offset)
 log_print('Offset is the average of %i seconds before t_inj_proton' % average_offset_seconds)
 
 # Time keys
-time_key_list = ['t_start_fill', 't_inj_proton', 'start_ramp', 'stop_squeeze', 'stable_beams']
+time_key_list = ['start_fill', 'inj_phys', 'start_ramp', 'stop_squeeze', 'stable_beams']
 for ii in xrange(hrs_after_sb):
     time_key_list.append('sb+%i_hrs' % (ii+1))
 
@@ -170,7 +170,7 @@ for filln in fills_0:
         log_print('Fill %i did not reach stable beams.' % filln)
         process_fill = False
     elif t_start_injphys == -1:
-        log_print('Warning: Offset for fill %i could not be calculated as t_start_INJPROT is not in the fills and bmodes file!' % filln)
+        log_print('Warning: Offset for fill %i could not be calculated as t_start_INJPHYS is not in the fills and bmodes file!' % filln)
         process_fill = False
 
     # Check if all files exist and store their paths
@@ -205,19 +205,21 @@ for filln in fills_0:
 
     # Use recalculated data
     if process_fill:
-        n_tries = 0
-        while n_tries < 5:
-            n_tries += 1
-            try:
-                qbs_ob = qf.compute_qbs_fill(filln, recompute_if_missing=True)
-                break
-            except IOError as e:
-                log_print('Fill %i: No recomputed data: %s!' % (filln,e))
-                # Suspicious fails of read attempts -> try once more
-                time.sleep(5)
-        else:
-            process_fill = False
-            log_print('Fill %i: Recomputed data read attempt failed!' % filln)
+        qbs_ob = {}
+        for use_dP in (True, False):
+            n_tries = 0
+            while process_fill and n_tries < 5:
+                n_tries += 1
+                try:
+                    qbs_ob[use_dP] = qf.compute_qbs_fill(filln, recompute_if_missing=True, use_dP=use_dP)
+                    break
+                except IOError as e:
+                    log_print('Fill %i: No recomputed data: %s!' % (filln,e))
+                    # Suspicious fails of read attempts -> try once more
+                    time.sleep(5)
+            else:
+                process_fill = False
+                log_print('Fill %i: Recomputed data read attempt failed!' % filln)
 
     # Special cells
     if process_fill:
@@ -236,8 +238,7 @@ for filln in fills_0:
             log_print('Fill %i: Recomputed special cell data read attempt failed!' % filln)
 
     if process_fill:
-        lhc_hl_dict = qf.lhc_arcs(qbs_ob)
-        arc_averages = qf.compute_qbs_arc_avg(qbs_ob)
+        arc_averages = {use_dP: qf.compute_qbs_arc_avg(qbs_ob[use_dP]) for use_dP in (True, False)}
 
 
     ## Allocate objects that are used later
@@ -278,6 +279,21 @@ for filln in fills_0:
         t_start_ramp = fills_and_bmodes[filln]['t_start_RAMP']
         t_stop_squeeze = fills_and_bmodes[filln]['t_stop_SQUEEZE']
         end_time = fills_and_bmodes[filln]['t_endfill']
+
+        # offset and integrated heat load
+        offset_dict = {}
+        objects = [qbs_ob[True], arc_averages[True], qbs_ob_special, qbs_ob[False], arc_averages[False]]
+        main_keys = ['all_cells', 'arc_averages', 'special_cells', 'all_cells_no_dP', 'arc_averages_no_dP']
+        for obj, main_key in zip(objects, main_keys):
+            mask_offset = np.logical_and(obj.timestamps < t_start_injphys, obj.timestamps > t_start_injphys - average_offset_seconds)
+            offset_dict[main_key] = dd = {}
+            for key, arr in obj.dictionary.iteritems():
+                offset = np.mean(arr[mask_offset])
+                integrated_hl = data_integration(obj.timestamps, arr-offset, key)
+                add_to_dict(output_dict, offset, ['hl_subtracted_offset', main_key, key])
+                add_to_dict(output_dict, integrated_hl, ['hl_integrated', main_key, key])
+                dd[key] = offset
+
 
         for kk, time_key in enumerate(time_key_list):
             tt = get_time(kk)
@@ -357,22 +373,20 @@ for filln in fills_0:
             this_add_to_dict(tot_imp+tot_sr, ['heat_load', 'total_model'])
 
             # Heat loads
-            for obj, main_key in zip([qbs_ob, arc_averages, qbs_ob_special], ['all_cells', 'arc_averages', 'special_cells']):
+            for obj, main_key in zip(objects, main_keys):
                 index = np.argmin(np.abs(obj.timestamps - tt))
-                mask_offset = np.logical_and(obj.timestamps < t_start_injphys, obj.timestamps > t_start_injphys - average_offset_seconds)
+                dd = offset_dict[main_key]
                 for key, arr in obj.dictionary.iteritems():
-                    offset = np.mean(arr[mask_offset])
-                    hl = arr[index] - offset
-                    integrated_hl = data_integration(obj.timestamps, arr-offset, key)
+                    if subtract_offset:
+                        hl = arr[index] - offset
+                    else:
+                        hl = arr[index]
                     this_add_to_dict(hl, ['heat_load', main_key, key])
-                    this_add_to_dict(offset, ['hl_subtracted_offset', main_key, key])
-                    this_add_to_dict(offset, ['hl_integrated', main_key, key])
 
 
 n_fills = len(output_dict['filln'])
 cast_to_na_recursively(output_dict, assure_length=n_fills)
 
-# Dump this dict
 with open(pkl_file_name, 'w') as f:
     cPickle.dump(output_dict, f, protocol=-1)
 
@@ -380,6 +394,6 @@ if not args.o:
     os.remove(latest_pkl)
     os.symlink(os.path.basename(pkl_file_name), latest_pkl)
 
-log_print('\nSuccess')
+log_print('\nSuccess!')
 log_print('Saved to %s\n' % pkl_file_name)
 
