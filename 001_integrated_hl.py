@@ -1,18 +1,28 @@
-import sys
+from __future__ import division
 import numpy as np
 import matplotlib.pyplot as plt
-import re
 
 import dict_utils as du
 
 from LHC_Heat_load_dict import main_dict
 from LHCMeasurementTools.mystyle import colorprog
+import LHCMeasurementTools.mystyle as ms
 
+ms.mystyle()
 plt.rcParams['lines.markersize'] = 10
 plt.close('all')
 
 moment = 'stable_beams'
+# remove 36b fills
+mask = np.array(map(lambda s: not(s.endswith('_36')), main_dict['filling_pattern']))
+main_dict = du.mask_dict(main_dict,mask)
+
+# remove low intensity fills
+mask = main_dict[moment]['n_bunches']['b1'] > 400
+main_dict = du.mask_dict(main_dict,mask)
+
 heat_load_dict = main_dict[moment]['heat_load']
+tot_int = main_dict[moment]['intensity']['total']
 
 first_fill_2016 = 4857
 for ctr, fill in enumerate(main_dict['filln']):
@@ -51,9 +61,7 @@ for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main
         item[nan] = 0
         color = colorprog(key_ctr,8)
         sp.plot(main_dict['filln'], np.cumsum(item), label=key, color=color)
-        sp2.plot(main_dict['filln'], \
-                arr/main_dict[moment]['intensity']['total'],\
-                '.', color=color)
+        sp2.plot(main_dict['filln'], arr/main_dict[moment]['intensity']['total'], '.', color=color)
     sp.legend(bbox_to_anchor=(1.15,1))
 sp.set_xlabel('Fill #')
 fig.subplots_adjust(left=.06, right=.84, top=.93, hspace=.38, wspace=.42)
@@ -62,11 +70,12 @@ fig = plt.figure(figsize = (8*1.5,6*1.5))
 fig.set_facecolor('w')
 fig.canvas.set_window_title('Integrated heat load 2')
 
-ylim_list = [(0,1e-12), (0, .5e-12)]
+sp = None
+ylim_list = [(0,None), (0, 1e-12)]
 for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main_keys, title_list, ylim_list)):
     this_dict = heat_load_dict[main_key]
 
-    sp = plt.subplot(2,1,ctr+1)
+    sp = plt.subplot(3,1,ctr+1, sharex=sp)
     sp.set_title('Integrated heat load')
     sp.set_ylabel('Normalized HL [W/p+]')
     sp.set_title(title)
@@ -87,11 +96,72 @@ for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main
             label = 'Begin of 2016'
         else:
             label = None
-        sp.axvline(year_change, color=color, lw=2, label=label)
+        #sp.axvline(year_change, color=color, lw=2, label=label)
     sp.legend(bbox_to_anchor=(1.15,1))
     sp.set_ylim(*ylim)
     sp.set_xlim(0,None)
 sp.set_xlabel('Cumulated HL [J]')
+
+#Bins
+cell_dict = main_dict[moment]['heat_load']['all_cells']
+cell_int_dict = main_dict['hl_integrated']['all_cells']
+n_bins = 10
+
+cell_hls = []
+for cell, hl_arr in cell_dict.iteritems():
+    cell_hls.append((cell, np.mean(hl_arr[-10:])))
+
+cell_hls = filter(lambda x: x[1] > 0, cell_hls)
+cell_hls.sort(key=lambda x: x[1])
+min_hl, max_hl = cell_hls[0][1], cell_hls[-1][1]
+delta_hl = (max_hl - min_hl) / (n_bins -1)
+bins = [[]]
+bin_ = bins[0]
+for cell, hl in cell_hls:
+    if hl > min_hl + delta_hl:
+        min_hl += delta_hl
+        bin_ = []
+        bins.append(bin_)
+    bin_.append(cell)
+
+sp = plt.subplot(3,1,3, sharex=sp)
+sp.set_xlabel('Integrated heat load ')
+sp.set_ylabel('Normalized HL [W/p+]')
+sp.set_title('Bins')
+sp.grid(True)
+
+tot_arr, tot_divisor = 0, 0
+tot_int_arr, tot_int_divisor = 0, 0
+for ctr, bin_ in enumerate(bins):
+    color = colorprog(ctr, bins)
+    label = '%i cells' % len(bin_)
+    bin_arr, bin_divisor = 0, 0
+    bin_int_arr, bin_int_divisor = 0, 0
+    for cell in bin_:
+        bin_int_arr += np.nan_to_num(cell_int_dict[cell])
+        bin_int_divisor += np.isfinite(cell_int_dict[cell])
+        bin_arr += np.nan_to_num(cell_dict[cell])
+        bin_divisor += np.isfinite(cell_dict[cell])
+
+    tot_arr += bin_arr
+    tot_divisor += bin_divisor
+    tot_int_arr += bin_int_arr
+    tot_int_divisor += bin_int_divisor
+
+    bin_hl = bin_arr/bin_divisor
+    bin_int_hl = bin_int_arr / bin_int_divisor
+    int_hl = np.cumsum(bin_hl)
+
+    sp.plot(np.cumsum(bin_int_hl), bin_hl/tot_int, '.', color=color, label=label)
+
+tot_hl = tot_arr / tot_divisor
+tot_int_hl = tot_int_arr / tot_int_divisor
+sp.plot(np.cumsum(tot_int_hl), tot_hl/tot_int, '.', color='black', label='Average')
+
+sp.legend(bbox_to_anchor=(1.15,1))
+sp.set_xlim(0,None)
+
+
 
 fig.subplots_adjust(left=.06, right=.84, top=.93, hspace=.38, wspace=.42)
 plt.show()
