@@ -9,7 +9,6 @@ import LHCMeasurementTools.mystyle as ms
 import LHCMeasurementTools.savefig as sf
 from LHC_Heat_load_dict import mask_dict, main_dict
 import dict_utils as du
-from config_qbs import config_qbs as cq
 
 ms.mystyle_arial(20)
 
@@ -109,7 +108,7 @@ hl_normalized_delta(selected, cell_average, 'Selected cells at %s' % moment, lab
 
 min_hl, max_hl = arc_cell_hls[0][2], arc_cell_hls[-1][2]
 
-delta_hl = (max_hl - min_hl) / (n_bins-2)
+delta_hl = (max_hl-min_hl) / (n_bins-2)
 bins = []
 ref_hl = min_hl
 for arc, cell, hl in arc_cell_hls:
@@ -127,7 +126,7 @@ dict_diff           = du.operate_on_dicts(dict_stop_squeeze, dict_start_ramp, op
 titles = ('At stop_squeeze', 'At start ramp', 'Difference after ramp')
 
 arcs = []
-for arc, cells in du.arc_cells_dict.iteritems():
+for arc, cells in sorted(du.arc_cells_dict.iteritems()):
     this_arc = []
     arcs.append(this_arc)
     for cell in cells:
@@ -156,7 +155,7 @@ for arr_list, big_title in zip((bins, arcs), ('Bins', 'Arcs')):
             if arr_list is bins:
                 labels.append('%i cells' % len(bin_))
             else:
-                labels.append(cq.arc_list[arr_ctr])
+                labels.append(sorted(du.arc_cells_dict.keys())[arr_ctr])
         tot_average /= tot_divisor
 
         title = ' '.join((big_title, title))

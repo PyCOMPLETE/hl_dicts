@@ -16,6 +16,7 @@ from LHCMeasurementTools.LHC_BQM import blength
 from LHCMeasurementTools.SetOfHomogeneousVariables import SetOfHomogeneousNumericVariables
 from LHCMeasurementTools.LHC_Energy import energy
 
+sys.path.append('..')
 import HeatLoadCalculators.impedance_heatload as hli
 import HeatLoadCalculators.synchrotron_radiation_heatload as hls
 
@@ -25,7 +26,7 @@ import GasFlowHLCalculator.qbs_fill as qf
 subtract_offset = True
 average_offset_seconds = 600
 hrs_after_sb = 24
-hl_dict_dir = './hl_dicts/'
+hl_dict_dir = './'
 
 # Arguments
 parser = argparse.ArgumentParser()
@@ -391,7 +392,7 @@ cast_to_na_recursively(output_dict, assure_length=n_fills)
 # Metadata
 with open(logfile, 'r') as f:
     metadata = '%s\n' % sys.argv
-    metadata += f.readlines()
+    metadata += f.read()
 output_dict['LOGFILE'] = metadata
 
 # Save dict to pkl
