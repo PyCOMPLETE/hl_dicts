@@ -31,11 +31,11 @@ def operate_on_dicts(dict1, dict2, operator):
     def recurse(dict1, dict2, new_dict):
         for key in dict1:
             tt = type(dict1[key])
-            if tt is dict:
+            if tt == dict:
                 recurse(dict1[key],dict2[key], new_dict[key])
-            elif tt is np.ndarray:
+            elif tt == np.ndarray:
                 new_dict[key] = operator(dict1[key], dict2[key])
-            elif tt is str:
+            elif tt == str:
                 pass
             else:
                 raise ValueError('Unexpected type %s behind key %s!' % (tt, key))
