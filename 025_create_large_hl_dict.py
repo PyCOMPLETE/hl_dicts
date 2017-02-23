@@ -33,10 +33,18 @@ parser = argparse.ArgumentParser()
 parser.add_argument('year', type=int)
 parser.add_argument('-o', help='Force output filename', type=str)
 parser.add_argument('--fills', help='Force fill list', nargs='+')
+parser.add_argument('--debug', help='Print debug info', action='store_true')
 args = parser.parse_args()
 
 if args.fills and not args.o:
     raise ValueError('If fills are specified, thet output has to, as well!')
+
+if args.debug:
+    debugf = open('debug.txt', 'w')
+
+# Add current version of this script to output meta data
+with open(__file__.replace('.pyc', '.py'), 'r') as f:
+    script = f.read()
 
 # Find new version
 if args.o:
@@ -87,6 +95,8 @@ filling_pattern_ob = filling_pattern_raw[key]
 
 # Other functions
 def add_to_dict(dictionary, value, keys, zero=False):
+    if args.debug:
+        print((value, keys), file=debugf)
     if zero:
         value = 0
     for nn, key in enumerate(keys):
@@ -173,7 +183,7 @@ for filln in fills_0:
         log_print('Fill %i did not reach stable beams.' % filln)
         process_fill = False
     elif t_start_injphys == -1:
-        log_print('Warning: Offset for fill %i could not be calculated as t_start_INJPHYS is not in the fills and bmodes file!' % filln)
+        log_print('Warning: Offset for fill %i cannot be calculated as t_start_INJPHYS is not in the fills and bmodes file!' % filln)
         process_fill = False
 
     # Check if all files exist and store their paths
@@ -380,10 +390,13 @@ for filln in fills_0:
                 dd = offset_dict[main_key]
                 for key, arr in obj.dictionary.iteritems():
                     if subtract_offset:
-                        hl = arr[index] - offset
+                        hl = arr[index] - dd[key]
                     else:
                         hl = arr[index]
                     this_add_to_dict(hl, ['heat_load', main_key, key])
+
+if args.debug:
+    debugf.close()
 
 # Lists to np arrays
 n_fills = len(output_dict['filln'])
@@ -393,7 +406,8 @@ cast_to_na_recursively(output_dict, assure_length=n_fills)
 with open(logfile, 'r') as f:
     metadata = '%s\n' % sys.argv
     metadata += f.read()
-output_dict['LOGFILE'] = metadata
+    output_dict['LOGFILE'] = metadata
+    output_dict['SCRIPT'] = script
 
 # Save dict to pkl
 with open(pkl_file_name, 'w') as f:
