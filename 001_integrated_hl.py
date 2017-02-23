@@ -1,4 +1,5 @@
 from __future__ import division
+import re
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -75,7 +76,7 @@ ylim_list = [(0,None), (0, 1e-12)]
 for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main_keys, title_list, ylim_list)):
     this_dict = heat_load_dict[main_key]
 
-    sp = plt.subplot(3,1,ctr+1, sharex=sp)
+    sp = plt.subplot(2,2,ctr+1, sharex=sp)
     sp.set_title('Integrated heat load')
     sp.set_ylabel('Normalized HL [W/p+]')
     sp.set_title(title)
@@ -124,7 +125,7 @@ for cell, hl in cell_hls:
         bins.append(bin_)
     bin_.append(cell)
 
-sp = plt.subplot(3,1,3, sharex=sp)
+sp = plt.subplot(2,2,3, sharex=sp)
 sp.set_xlabel('Integrated heat load ')
 sp.set_ylabel('Normalized HL [W/p+]')
 sp.set_title('Bins')
@@ -161,6 +162,25 @@ sp.plot(np.cumsum(tot_int_hl), tot_hl/tot_int, '.', color='black', label='Averag
 sp.legend(bbox_to_anchor=(1.15,1))
 sp.set_xlim(0,None)
 
+
+sp = plt.subplot(2,2,4)
+sp.set_xlabel('Integrated heat load ')
+sp.set_ylabel('Normalized HL [W/p+]')
+sp.set_title('Special cell dipoles')
+sp.grid(True)
+
+special_dict = main_dict[moment]['heat_load']['special_cells']
+re_special_dipole = re.compile('^.*_D[234]$')
+special_dip_keys = filter(re_special_dipole.match, special_dict.keys())
+for ctr, key in enumerate(special_dip_keys):
+    if key in ('33L5_D4', '33L5_D3'): continue
+
+    norm_hl = special_dict[key] / tot_int
+    int_hl = int_dict['special_cells'][key]
+    color=ms.colorprog(ctr, special_dip_keys)
+    sp.plot(np.cumsum(int_hl), norm_hl, '.', label=key, color=color)
+
+sp.legend(bbox_to_anchor=(1.15,1))
 
 
 fig.subplots_adjust(left=.06, right=.84, top=.93, hspace=.38, wspace=.42)
