@@ -30,10 +30,9 @@ def hl_normalized_delta(input_arrays, average, title, labels, suptitle=False):
     fig.subplots_adjust(left=0.06, right=0.75)
     if suptitle:
         plt.suptitle(suptitle, fontsize=20)
-    sp1 = None
-    sp5 = plt.subplot(3,1,1, sharex=sp1)
-    sp6 = plt.subplot(3,1,2, sharex=sp1)
-    sp_avg = plt.subplot(3,1,3, sharex=sp1)
+    sp5 = plt.subplot(3,1,1)
+    sp6 = plt.subplot(3,1,2, sharex=sp5)
+    sp_avg = plt.subplot(3,1,3, sharex=sp5)
     sp5.set_ylabel('Cell heat loads [W/hc]')
     sp6.set_ylabel('Cell heat loads [W/hc/p+]')
     sp_avg.set_ylabel('Cell heat loads [W/hc/p+]')
@@ -108,6 +107,7 @@ hl_normalized_delta(selected, cell_average, 'Selected cells at %s' % moment, lab
 
 min_hl, max_hl = arc_cell_hls[0][2], arc_cell_hls[-1][2]
 
+# Bins
 delta_hl = (max_hl-min_hl) / (n_bins-2)
 bins = []
 ref_hl = min_hl
@@ -125,6 +125,7 @@ dict_diff           = du.operate_on_dicts(dict_stop_squeeze, dict_start_ramp, op
 
 titles = ('At stop_squeeze', 'At start ramp', 'Difference after ramp')
 
+# Arcs
 arcs = []
 for arc, cells in sorted(du.arc_cells_dict.iteritems()):
     this_arc = []
@@ -132,8 +133,20 @@ for arc, cells in sorted(du.arc_cells_dict.iteritems()):
     for cell in cells:
         this_arc.append((arc, cell))
 
+# Cell types
+from info_on_half_cells import type_occurence_dict, type_list
+types = []
+for type_ in type_list:
+    cells = type_occurence_dict[type_]['cells']
+    list_ = []
+    for arc, cell, cell_ctr in cells:
+        arc = arc.replace('S', 'Arc_')
+        key = du.arc_cells_dict_nods[arc][cell_ctr]
+        list_.append((arc, key))
+    types.append(list_)
 
-for arr_list, big_title in zip((bins, arcs), ('Bins', 'Arcs')):
+
+for arr_list, big_title in zip((bins, arcs, types), ('Bins', 'Arcs', 'Types')):
     for recalc_dict,title in zip((dict_stop_squeeze, dict_start_ramp, dict_diff), titles):
         binned_arrays = []
         labels = []
@@ -154,8 +167,10 @@ for arr_list, big_title in zip((bins, arcs), ('Bins', 'Arcs')):
             binned_arrays.append(arr)
             if arr_list is bins:
                 labels.append('%i cells' % len(bin_))
-            else:
+            elif arr_list is arcs:
                 labels.append(sorted(du.arc_cells_dict.keys())[arr_ctr])
+            elif arr_list is types:
+                labels.append('%s %i cells' % (type_list[arr_ctr], len(bin_)))
         tot_average /= tot_divisor
 
         title = ' '.join((big_title, title))

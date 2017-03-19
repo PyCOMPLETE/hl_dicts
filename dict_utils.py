@@ -90,12 +90,16 @@ def q4_keys_list(hl_dict):
     return get_matching_keys(hl_dict, re_q4)
 
 arc_cells_dict = {}
-for cell, type_, sector in zip(cq.Cell_list, cq.Type_list, cq.Sector_list):
+arc_cells_dict_nods = {}
+for cell, type_, sector, len_ in zip(cq.Cell_list, cq.Type_list, cq.Sector_list, cq.L_list):
     sector_str = 'Arc_' + sector
     if sector_str not in arc_cells_dict:
         arc_cells_dict[sector_str] =  []
+        arc_cells_dict_nods[sector_str] = []
     if type_ == 'ARC':
         arc_cells_dict[sector_str].append(cell)
+        if len_ == 53:
+            arc_cells_dict_nods[sector_str].append(cell)
 del cell, type_, sector,  cq, sector_str
 
 
