@@ -77,7 +77,7 @@ def values_over_time(hl_dict, *keys):
 def get_matching_keys(hl_dict, regex):
     hl_dict = hl_dict['hl_integrated']['all_cells']
     list_ = filter(regex.match, hl_dict.keys())
-    return list_
+    return sorted(list_)
 
 def q6_keys_list(hl_dict):
     re_q6 = re.compile('^06[LR][1528]_\d{3}')
@@ -88,6 +88,9 @@ def q5_keys_list(hl_dict):
 def q4_keys_list(hl_dict):
     re_q4 = re.compile('^04[LR][1528]_\d{3}')
     return get_matching_keys(hl_dict, re_q4)
+def q3_keys_list(hl_dict):
+    re_q3 = re.compile('^03[LR][1528]_\d{3}')
+    return get_matching_keys(hl_dict, re_q3)
 
 arc_cells_dict = {}
 for cell, type_, sector in zip(cq.Cell_list, cq.Type_list, cq.Sector_list):
