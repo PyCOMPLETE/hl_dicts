@@ -1,4 +1,5 @@
 from __future__ import division
+import os
 import re
 import argparse
 
@@ -15,13 +16,17 @@ import LHCMeasurementTools.savefig as sf
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--pdsave', help='Save plots in pdijksta plot dir.', action='store_true')
+parser.add_argument('--savefig', help='Save plots with specified name.')
+parser.add_argument('--noshow', help='Do not call plt.show.', action='store_true')
 args = parser.parse_args()
 
 
-ms.mystyle()
-plt.rcParams['lines.markersize'] = 10
+ms.mystyle(12)
+plt.rcParams['lines.markersize'] = 7
 plt.close('all')
-bbox_to_anchor=(1.3,1)
+bbox_to_anchor=(1.4,1)
+def legend(sp, bbox_to_anchor=(1,1), loc='upper left', **kwargs):
+    sp.legend(bbox_to_anchor=bbox_to_anchor, loc=loc, **kwargs)
 
 moment = 'stable_beams'
 # remove 36b fills
@@ -50,7 +55,7 @@ int_dict = main_dict['hl_integrated']
 sp = None
 figs = []
 fig = ms.figure('Integrated heat load', figs)
-fig.subplots_adjust(left=.06, right=.84, top=.93, hspace=.38, wspace=.42)
+#fig.subplots_adjust(left=.06, right=.84, top=.93, hspace=.38, wspace=.42)
 
 for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main_keys, title_list, ylim_list)):
     this_dict = heat_load_dict[main_key]
@@ -73,12 +78,13 @@ for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main
         color = colorprog(key_ctr,8)
         sp.plot(main_dict['filln'], np.cumsum(item), label=key, color=color)
         sp2.plot(main_dict['filln'], arr/main_dict[moment]['intensity']['total'], '.', color=color)
-    sp.legend(bbox_to_anchor=bbox_to_anchor)
+    legend(sp)
 sp.set_xlabel('Fill #')
 
 fig = ms.figure('Integrated heat load 2', figs)
-fig.subplots_adjust(left=.06, right=.84, top=.93, hspace=.38, wspace=.42)
+#fig.subplots_adjust(left=.06, right=.84, top=.93, hspace=.38, wspace=.42)
 
+# Arcs and Quads 
 sp = None
 ylim_list = [(0,None), (0, 1e-12)]
 for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main_keys, title_list, ylim_list)):
@@ -100,13 +106,18 @@ for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main
         year_change = np.sum(item[:index_2016])
         color = colorprog(key_ctr,8)
         norm_hl = this_dict[key]/main_dict[moment]['intensity']['total']
-        sp.plot(np.cumsum(item), norm_hl,'.', label=key, color=color)
+
+        if title == 'Q6 Quads':
+            label = key[:4]
+        else:
+            label = key.replace('_',' ')
+        sp.plot(np.cumsum(item), norm_hl,'.', label=label, color=color)
         if key_ctr == 0:
             label = 'Begin of 2016'
         else:
             label = None
         #sp.axvline(year_change, color=color, lw=2, label=label)
-    sp.legend(bbox_to_anchor=bbox_to_anchor)
+    legend(sp)
     sp.set_ylim(*ylim)
     sp.set_xlim(0,None)
 sp.set_xlabel('Cumulated HL [J]')
@@ -133,6 +144,7 @@ for cell, hl in cell_hls:
         bins.append(bin_)
     bin_.append(cell)
 
+# Bins
 sp = plt.subplot(2,2,3, sharex=sp)
 sp.set_xlabel('Integrated heat load ')
 sp.set_ylabel('Normalized HL [W/p+]')
@@ -143,7 +155,7 @@ tot_arr, tot_divisor = 0, 0
 tot_int_arr, tot_int_divisor = 0, 0
 for ctr, bin_ in enumerate(bins):
     color = colorprog(ctr, bins)
-    label = '%i cells' % len(bin_)
+    label = '%i' % len(bin_)
     bin_arr, bin_divisor = 0, 0
     bin_int_arr, bin_int_divisor = 0, 0
     for cell in bin_:
@@ -167,10 +179,11 @@ tot_hl = tot_arr / tot_divisor
 tot_int_hl = tot_int_arr / tot_int_divisor
 sp.plot(np.cumsum(tot_int_hl), tot_hl/tot_int, '.', color='black', label='Average')
 
-sp.legend(bbox_to_anchor=bbox_to_anchor)
+legend(sp, title='Number of cells')
 sp.set_xlim(0,None)
 
 
+# Special cells
 sp = plt.subplot(2,2,4)
 sp.set_xlabel('Integrated heat load ')
 sp.set_ylabel('Normalized HL [W/p+]')
@@ -186,10 +199,11 @@ for ctr, key in enumerate(special_dip_keys):
     norm_hl = special_dict[key] / tot_int
     int_hl = int_dict['special_cells'][key]
     color=ms.colorprog(ctr, special_dip_keys)
+    label = key.replace('_', ' ')
     sp.plot(np.cumsum(int_hl), norm_hl, '.', label=key, color=color)
 
 sp.set_ylim(-0.1e-13,None)
-sp.legend(bbox_to_anchor=bbox_to_anchor)
+legend(sp)
 
 fig = ms.figure('Standalone D3 in LSS 45', figs)
 sp = plt.subplot(2,2,1)
@@ -213,5 +227,12 @@ for key, hl in cells_dict.iteritems():
 
 if args.pdsave:
     sf.pdijksta(figs)
+elif args.savefig:
+    for num in plt.get_fignums():
+        fig = plt.figure(num)
+        plt.suptitle('')
+        fig.subplots_adjust(right=0.85, wspace=0.75, hspace=.38)
+        fig.savefig(os.path.expanduser(args.savefig) + '_%i.png' % num)
 
-plt.show()
+if not args.noshow:
+    plt.show()
