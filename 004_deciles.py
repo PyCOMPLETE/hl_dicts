@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 import operator
 import argparse
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,11 +11,16 @@ import LHCMeasurementTools.savefig as sf
 from LHC_Heat_load_dict import mask_dict, main_dict
 import dict_utils as du
 
-ms.mystyle_arial(20)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--pdsave', help='Save in pdijksta dir', action='store_true')
+parser.add_argument('--pdsave', help='Save plots in pdijksta plot dir.', action='store_true')
+parser.add_argument('--savefig', help='Save plots with specified name.')
+parser.add_argument('--noshow', help='Do not call plt.show.', action='store_true')
+parser.add_argument('--celltypes', action='store_true')
 args = parser.parse_args()
+
+ms.mystyle(12)
+plt.rcParams['lines.markersize'] = 7
 
 plt.close('all')
 moment = 'stop_squeeze'
@@ -25,17 +31,17 @@ tot_int = main_dict[moment]['intensity']['total']
 
 
 figures = []
-def hl_normalized_delta(input_arrays, average, title, labels, suptitle=False):
+def hl_normalized_delta(input_arrays, average, title, labels, suptitle=False, legend_title=None):
     fig = ms.figure(title, figures)
-    fig.subplots_adjust(left=0.06, right=0.75)
     if suptitle:
-        plt.suptitle(suptitle, fontsize=20)
+        plt.suptitle(suptitle)
     sp5 = plt.subplot(3,1,1)
     sp6 = plt.subplot(3,1,2, sharex=sp5)
     sp_avg = plt.subplot(3,1,3, sharex=sp5)
     sp5.set_ylabel('Cell heat loads [W/hc]')
     sp6.set_ylabel('Cell heat loads [W/hc/p+]')
     sp_avg.set_ylabel('Cell heat loads [W/hc/p+]')
+    sp_avg.set_xlabel('Fill number')
     sp5.grid(True)
     sp6.grid(True)
     sp_avg.grid(True)
@@ -46,17 +52,17 @@ def hl_normalized_delta(input_arrays, average, title, labels, suptitle=False):
 
     for ctr, (arr, label) in enumerate(zip(input_arrays, labels)):
         color = ms.colorprog(ctr, input_arrays)
-        sp5.plot(x_axis, arr, '.', color=color, markersize=12)
-        sp6.plot(x_axis, arr/tot_int, '.', color=color, markersize=12, label=label)
-        sp_avg.plot(x_axis, (arr-average)/tot_int, '.', color=color, markersize=12)
+        sp5.plot(x_axis, arr, '.', color=color)
+        sp6.plot(x_axis, arr/tot_int, '.', color=color, label=label)
+        sp_avg.plot(x_axis, (arr-average)/tot_int, '.', color=color)
 
-    sp5.plot(x_axis, average,'.', color='black', markersize=12)
-    sp6.plot(x_axis, average/tot_int,'.', color='black', markersize=12, label='Average')
-    sp_avg.plot(x_axis, np.zeros_like(average),'.', color='black', markersize=12)
+    sp5.plot(x_axis, average,'.', color='black')
+    sp6.plot(x_axis, average/tot_int,'.', color='black', label='Average')
+    sp_avg.plot(x_axis, np.zeros_like(average),'.', color='black')
 
     plt.setp(sp5.get_xticklabels(), visible = False)
     plt.setp(sp6.get_xticklabels(), visible = False)
-    sp6.legend(bbox_to_anchor=(1.30, 1.04))
+    sp6.legend(bbox_to_anchor=(1, 1), loc='upper left', title=legend_title)
     return sp5, sp6, sp_avg
 
 
@@ -81,20 +87,24 @@ indices = map(int, np.linspace(0, len(arc_cell_hls), n_bins))
 
 binned_arrays = []
 labels = []
+binned_cells = [[]]
 for ctr in xrange(len(indices)-1):
     arr = 0
     start, stop = indices[ctr:ctr+2]
     divisor = 0
+    cells = []
     for ctr2 in xrange(start, stop):
         arc, cell, _ = arc_cell_hls[ctr2]
         this_hl = recalc_dict[cell]
         divisor += np.array(np.isfinite(this_hl), int)
         arr += np.nan_to_num(this_hl)
+        cells.append((arc,cell))
+    binned_cells.append(cells)
     arr /= divisor
     binned_arrays.append(arr)
-    labels.append('%i0%% decile %i cells' %(ctr+1,stop-start))
+    labels.append('%i0%%' %(ctr+1))
 
-hl_normalized_delta(binned_arrays, cell_average, 'All cells at %s' % moment, labels)
+hl_normalized_delta(binned_arrays, cell_average, 'All cells at %s' % moment, labels, legend_title='HL ranking')
 
 selected, labels = [], []
 for i in xrange(0,len(arc_cell_hls), 50):
@@ -134,19 +144,28 @@ for arc, cells in sorted(du.arc_cells_dict.iteritems()):
         this_arc.append((arc, cell))
 
 # Cell types
-from info_on_half_cells import type_occurence_dict, type_list
-types = []
-for type_ in type_list:
-    cells = type_occurence_dict[type_]['cells']
-    list_ = []
-    for arc, cell, cell_ctr in cells:
-        arc = arc.replace('S', 'Arc_')
-        key = du.arc_cells_dict_nods[arc][cell_ctr]
-        list_.append((arc, key))
-    types.append(list_)
+if args.celltypes:
+    from info_on_half_cells import type_occurence_dict, type_list
+    types = []
+    for type_ in type_list:
+        cells = type_occurence_dict[type_]['cells']
+        list_ = []
+        for arc, cell, cell_ctr in cells:
+            arc = arc.replace('S', 'Arc_')
+            key = du.arc_cells_dict_nods[arc][cell_ctr]
+            list_.append((arc, key))
+        types.append(list_)
+
+arr_titles = [
+        (bins, 'Bins'),
+        (arcs, 'Arcs'),
+        (binned_cells, 'Deciles'),
+        ]
+if args.celltypes:
+    arr_titles.append((typse, 'Types'))
 
 
-for arr_list, big_title in zip((bins, arcs, types), ('Bins', 'Arcs', 'Types')):
+for arr_list, big_title in arr_titles:
     for recalc_dict,title in zip((dict_stop_squeeze, dict_start_ramp, dict_diff), titles):
         binned_arrays = []
         labels = []
@@ -169,6 +188,8 @@ for arr_list, big_title in zip((bins, arcs, types), ('Bins', 'Arcs', 'Types')):
                 labels.append('%i cells' % len(bin_))
             elif arr_list is arcs:
                 labels.append(sorted(du.arc_cells_dict.keys())[arr_ctr])
+            elif arr_list is binned_cells:
+                labels.append('%i0%%' % (arr_ctr))
             elif arr_list is types:
                 labels.append('%s %i cells' % (type_list[arr_ctr], len(bin_)))
         tot_average /= tot_divisor
@@ -180,8 +201,16 @@ for arr_list, big_title in zip((bins, arcs, types), ('Bins', 'Arcs', 'Types')):
             sp6.set_ylim(-.5e-13,2.5e-13)
             sp_avg.set_ylim(-1e-13,1e-13)
 
-if args.pdsave:
-    for fig in figures:
-        sf.pdijksta(fig)
 
-plt.show()
+if args.pdsave:
+    sf.pdijksta(figs)
+elif args.savefig:
+    for num in plt.get_fignums():
+        fig = plt.figure(num)
+        if args.noshow:
+            plt.suptitle('')
+        fig.subplots_adjust(left=0.1,right=0.75, wspace=0.75, hspace=.38)
+        fig.savefig(os.path.expanduser(args.savefig) + '_%i.png' % num)
+
+if not args.noshow:
+    plt.show()
