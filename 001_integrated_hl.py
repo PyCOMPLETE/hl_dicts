@@ -12,6 +12,7 @@ from LHC_Heat_load_dict import main_dict
 from LHCMeasurementTools.mystyle import colorprog
 import LHCMeasurementTools.mystyle as ms
 import LHCMeasurementTools.savefig as sf
+import LHCMeasurementTools.LHC_Heatloads as HL
 
 
 parser = argparse.ArgumentParser()
@@ -21,6 +22,7 @@ parser.add_argument('--noshow', help='Do not call plt.show.', action='store_true
 args = parser.parse_args()
 
 
+x_label='Integrated HL [J]'
 ms.mystyle(12)
 plt.rcParams['lines.markersize'] = 7
 plt.close('all')
@@ -28,13 +30,13 @@ bbox_to_anchor=(1.4,1)
 def legend(sp, bbox_to_anchor=(1,1), loc='upper left', **kwargs):
     sp.legend(bbox_to_anchor=bbox_to_anchor, loc=loc, **kwargs)
 
-moment = 'stable_beams'
+moment = 'stop_squeeze'
 # remove 36b fills
 mask = np.array(map(lambda s: not(s.endswith('_36')), main_dict['filling_pattern']))
 main_dict = du.mask_dict(main_dict,mask)
 
 # remove low intensity fills
-mask = main_dict[moment]['n_bunches']['b1'] > 400
+mask = np.logical_and(main_dict[moment]['n_bunches']['b1'] > 800, main_dict[moment]['n_bunches']['b2'] > 800)
 main_dict = du.mask_dict(main_dict,mask)
 
 heat_load_dict = main_dict[moment]['heat_load']
@@ -61,8 +63,10 @@ for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main
     this_dict = heat_load_dict[main_key]
 
     sp = plt.subplot(2,1,ctr+1, sharex=sp)
-    sp.set_title('Integrated heat load')
-    sp.set_ylabel('Cumulated HL [J]')
+    if title == 'Arcs':
+        sp.set_ylabel('Integrated HL [J]')
+    else:
+        sp.set_ylabel('Norm. int. HL [J/m]')
     sp.set_title(title)
     sp.grid(True)
 
@@ -72,6 +76,7 @@ for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main
     for key_ctr, (key, arr) in enumerate(this_dict.iteritems()):
         if key not in good_keys:
             continue
+
         item = int_dict[main_key][key]
         nan = np.isnan(item)
         item[nan] = 0
@@ -86,13 +91,17 @@ fig = ms.figure('Integrated heat load 2', figs)
 
 # Arcs and Quads 
 sp = None
-ylim_list = [(0,None), (0, 1e-12)]
+ylim_list = [(0,None), (0, None)]
 for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main_keys, title_list, ylim_list)):
     this_dict = heat_load_dict[main_key]
 
-    sp = plt.subplot(2,2,ctr+1, sharex=sp)
-    sp.set_title('Integrated heat load')
-    sp.set_ylabel('Normalized HL [W/p+]')
+    sp = plt.subplot(2,2,ctr+1)
+    if title == 'Arcs':
+        sp.set_ylabel('Normalized HL [W/p+]')
+        sp.set_xlabel(x_label)
+    else:
+        sp.set_ylabel('Normalized HL [W/p+/m]')
+        sp.set_xlabel('Norm. Int. HL [J/m]')
     sp.set_title(title)
     sp.grid(True)
 
@@ -103,6 +112,12 @@ for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main
         nan = np.isnan(item)
         item[nan] = 0
 
+        if title == 'Arcs':
+            len_ = 1.
+        else:
+            len_ = HL.magnet_length['Q6s_IR'+key[3]][0]
+
+
         year_change = np.sum(item[:index_2016])
         color = colorprog(key_ctr,8)
         norm_hl = this_dict[key]/main_dict[moment]['intensity']['total']
@@ -111,7 +126,7 @@ for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main
             label = key[:4]
         else:
             label = key.replace('_',' ')
-        sp.plot(np.cumsum(item), norm_hl,'.', label=label, color=color)
+        sp.plot(np.cumsum(item)/len_, norm_hl/len_,'.', label=label, color=color)
         if key_ctr == 0:
             label = 'Begin of 2016'
         else:
@@ -120,7 +135,6 @@ for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main
     legend(sp)
     sp.set_ylim(*ylim)
     sp.set_xlim(0,None)
-sp.set_xlabel('Cumulated HL [J]')
 
 #Bins
 cell_dict = main_dict[moment]['heat_load']['all_cells']
@@ -144,18 +158,38 @@ for cell, hl in cell_hls:
         bins.append(bin_)
     bin_.append(cell)
 
-# Bins
-sp = plt.subplot(2,2,3, sharex=sp)
-sp.set_xlabel('Integrated heat load ')
+deciles = [[]]
+decil = deciles[0]
+max_ctr = 0 + len(cell_hls)/10.
+for ctr, (cell, _) in enumerate(cell_hls):
+    if ctr > max_ctr:
+        max_ctr += len(cell_hls)/10.
+        decil = []
+        deciles.append(decil)
+    decil.append(cell)
+
+if True:
+    title = 'Deciles'
+    bins = deciles
+    get_label = lambda x, y: '%i0%%' % (x+1)
+    legend_title = None
+else:
+    title = 'Bins'
+    get_label = lambda x, y: '%i cells' % len(y)
+    legend_title = 'Number of cells'
+
+
+sp = plt.subplot(2,2,3)
+sp.set_xlabel(x_label)
 sp.set_ylabel('Normalized HL [W/p+]')
-sp.set_title('Bins')
+sp.set_title(title)
 sp.grid(True)
 
 tot_arr, tot_divisor = 0, 0
 tot_int_arr, tot_int_divisor = 0, 0
 for ctr, bin_ in enumerate(bins):
     color = colorprog(ctr, bins)
-    label = '%i' % len(bin_)
+    label = get_label(ctr, bin_)
     bin_arr, bin_divisor = 0, 0
     bin_int_arr, bin_int_divisor = 0, 0
     for cell in bin_:
@@ -179,13 +213,13 @@ tot_hl = tot_arr / tot_divisor
 tot_int_hl = tot_int_arr / tot_int_divisor
 sp.plot(np.cumsum(tot_int_hl), tot_hl/tot_int, '.', color='black', label='Average')
 
-legend(sp, title='Number of cells')
+legend(sp, title=legend_title)
 sp.set_xlim(0,None)
 
 
 # Special cells
 sp = plt.subplot(2,2,4)
-sp.set_xlabel('Integrated heat load ')
+sp.set_xlabel(x_label)
 sp.set_ylabel('Normalized HL [W/p+]')
 sp.set_title('Special cell dipoles')
 sp.grid(True)
@@ -207,7 +241,7 @@ legend(sp)
 
 fig = ms.figure('Standalone D3 in LSS 45', figs)
 sp = plt.subplot(2,2,1)
-sp.set_xlabel('Integrated heat load ')
+sp.set_xlabel(x_label)
 sp.set_ylabel('Normalized HL [W/p+]')
 sp.set_title('Standalone D3 in LSS 45')
 sp.grid(True)
