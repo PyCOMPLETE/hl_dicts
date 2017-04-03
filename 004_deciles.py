@@ -152,7 +152,7 @@ if args.celltypes:
         list_ = []
         for arc, cell, cell_ctr in cells:
             arc = arc.replace('S', 'Arc_')
-            key = du.arc_cells_dict_nods[arc][cell_ctr]
+            key = du.arc_cells_dict[arc][cell_ctr]
             list_.append((arc, key))
         types.append(list_)
 
