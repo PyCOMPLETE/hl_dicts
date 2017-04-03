@@ -1,10 +1,13 @@
 from __future__ import print_function, division
 
+import os
 import matplotlib.pyplot as plt
 #import matplotlib.ticker as ticker
 import numpy as np
+import argparse
 
 import LHCMeasurementTools.mystyle as ms
+import LHCMeasurementTools.savefig as sf
 from LHCMeasurementTools.mystyle import colorprog
 import LHCMeasurementTools.TimestampHelpers as TH
 import LHCMeasurementTools.LHC_Heatloads as HL
@@ -14,11 +17,20 @@ import dict_utils as du
 plt.close('all')
 moment = 'stop_squeeze'
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--pdsave', help='Save plots in pdijksta plot dir.', action='store_true')
+parser.add_argument('--savefig', help='Save plots with specified name.')
+parser.add_argument('--noshow', help='Do not call plt.show.', action='store_true')
+args = parser.parse_args()
+
+def legend(sp, bbox_to_anchor=(1,1), loc='upper left', **kwargs):
+    sp.legend(bbox_to_anchor=bbox_to_anchor, loc=loc, **kwargs)
+
 date_on_xaxis = True
 filln_range = None # Tuple of min / max fill
 
-fontsz = 16
-markersize = 10
+fontsz = 12
+markersize = 6
 ms.mystyle_arial(fontsz=fontsz)#, dist_tick_lab=10)
 
 mask = np.logical_and(main_dict[moment]['n_bunches']['b1'] > 800, main_dict[moment]['n_bunches']['b2'] > 800)
@@ -55,7 +67,7 @@ sp_avg.grid('on')
 
 sp5.set_title('Arc heat loads')
 sp6.set_title('Normalized arc heat loads.')
-sp_avg.set_title('Normalized arc heat loads - Delta to average arc')
+sp_avg.set_title('Normalized arc heat loads - Delta to average')
 
 fig3 = ms.figure('Intensity - heat load fit')
 
@@ -103,12 +115,13 @@ arc_average = average
 
 
 #sp6.legend(bbox_to_anchor=(1.22,1.04))
-sp6.legend(bbox_to_anchor=(1.50,1.04))
+legend(sp6)
 sp5.set_ylabel('Heat load [W/hcell]')
-sp6.set_ylabel('Normalized heat load [W/hcell/p+]')
+sp6.set_ylabel('Norm. heat load [W/hcell/p+]')
+sp_avg.set_ylabel('$\Delta$ norm. HL [W/hcell/p+]')
 sp7.set_ylabel('Heat load [W/hcell]')
 sp7.set_xlabel('Bunch intensity [1e11]')
-sp7.legend(bbox_to_anchor=(1.50,1.04))
+legend(sp7)
 plt.setp(sp5.get_xticklabels(), visible = False)
 
 if date_on_xaxis:
@@ -176,12 +189,23 @@ for ctr, (key, len_) in enumerate(zip(quad_keys, quad_lens)):
 
 plt.setp(sp5.get_xticklabels(), visible = False)
 plt.setp(sp6.get_xticklabels(), visible = False)
-sp6.legend(bbox_to_anchor=(1.50,1.04))
-sp7.legend(bbox_to_anchor=(1.50,1.04))
+legend(sp6)
+legend(sp7)
 
 
 for fig in [fig2, fig3, fig4, fig5]:
     fig.suptitle('At '+moment)
     fig.subplots_adjust(right=0.7, left=0.15)
 
-plt.show()
+if args.pdsave:
+    sf.pdijksta(figs)
+elif args.savefig:
+    for num in plt.get_fignums():
+        fig = plt.figure(num)
+        plt.suptitle('')
+        fig.subplots_adjust(right=0.85, wspace=0.75, hspace=.38, bottom=0.1)
+        fig.savefig(os.path.expanduser(args.savefig) + '_%i.png' % num)
+
+if not args.noshow:
+    plt.show()
+

@@ -92,13 +92,18 @@ def q3_keys_list(hl_dict):
     re_q3 = re.compile('^03[LR][1528]_\d{3}')
     return get_matching_keys(hl_dict, re_q3)
 
-arc_cells_dict = {}
-for cell, type_, sector in zip(cq.Cell_list, cq.Type_list, cq.Sector_list):
+arc_list = sorted(['S23', 'S34', 'S81', 'S45', 'S56', 'S12', 'S78', 'S67'])
+arc_cells_dict, arc_cells_dict_with_ds = {}, {}
+for cell, type_, sector, len_ in zip(cq.Cell_list, cq.Type_list, cq.Sector_list, cq.L_list):
     sector_str = 'Arc_' + sector
     if sector_str not in arc_cells_dict:
         arc_cells_dict[sector_str] =  []
+    if sector_str not in arc_cells_dict_with_ds:
+        arc_cells_dict_with_ds[sector_str] =  []
     if type_ == 'ARC':
-        arc_cells_dict[sector_str].append(cell)
-del cell, type_, sector,  cq, sector_str
+        arc_cells_dict_with_ds[sector_str].append(cell)
+        if len_ == 53.:
+            arc_cells_dict[sector_str].append(cell)
 
+del cell, type_, sector,  cq, sector_str
 
