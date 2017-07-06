@@ -11,17 +11,29 @@ import LHCMeasurementTools.savefig as sf
 from LHCMeasurementTools.mystyle import colorprog
 import LHCMeasurementTools.TimestampHelpers as TH
 import LHCMeasurementTools.LHC_Heatloads as HL
-from LHC_Heat_load_dict import mask_dict, main_dict, arc_list
+from LHC_Heat_load_dict import mask_dict, main_dict as large_hl_dict, arc_list
 import dict_utils as du
 
 plt.close('all')
-moment = 'stop_squeeze'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--pdsave', help='Save plots in pdijksta plot dir.', action='store_true')
 parser.add_argument('--savefig', help='Save plots with specified name.')
 parser.add_argument('--noshow', help='Do not call plt.show.', action='store_true')
+parser.add_argument('--scrubbing', help='Use scrubbing dict', action='store_true')
 args = parser.parse_args()
+
+if args.scrubbing:
+    moment = 'scrubbing'
+    main_dict = du.load_dict('./scrubbing_dict_2017.pkl')
+    plot_fmt = '.-'
+else:
+    moment = 'stop_squeeze'
+    main_dict = large_hl_dict
+    mask = np.logical_and(main_dict[moment]['n_bunches']['b1'] > 800, main_dict[moment]['n_bunches']['b2'] > 800)
+    main_dict = mask_dict(main_dict,mask)
+    plot_fmt = '.'
+
 
 def legend(sp, bbox_to_anchor=(1,1), loc='upper left', **kwargs):
     sp.legend(bbox_to_anchor=bbox_to_anchor, loc=loc, **kwargs)
@@ -32,9 +44,6 @@ filln_range = None # Tuple of min / max fill
 fontsz = 12
 markersize = 6
 ms.mystyle_arial(fontsz=fontsz)#, dist_tick_lab=10)
-
-mask = np.logical_and(main_dict[moment]['n_bunches']['b1'] > 800, main_dict[moment]['n_bunches']['b2'] > 800)
-main_dict = mask_dict(main_dict,mask)
 
 # mask fill nrs
 if filln_range is not None:
@@ -86,17 +95,17 @@ for key in arc_list:
 average /= divisor
 
 tot_int = main_dict[moment]['intensity']['total']
-sp5.plot(x_axis, average, '.', label='Average', color='black', markersize=markersize)
-sp6.plot(x_axis, average/tot_int, '.', label='Average', color='black', markersize=markersize)
-sp_avg.plot(x_axis, np.zeros_like(average), '.', label='Average', color='black', markersize=markersize)
+sp5.plot(x_axis, average, plot_fmt, label='Average', color='black', markersize=markersize)
+sp6.plot(x_axis, average/tot_int, plot_fmt, label='Average', color='black', markersize=markersize)
+sp_avg.plot(x_axis, np.zeros_like(average), plot_fmt, label='Average', color='black', markersize=markersize)
 
 for arc_ctr, key in enumerate(arc_list):
     color = colorprog(arc_ctr, 8)
     arc_hl = main_dict[moment]['heat_load']['arc_averages'][key]
 
-    sp5.plot(x_axis, arc_hl, '.', label=key, color=color, markersize=markersize)
-    sp6.plot(x_axis, arc_hl/tot_int, '.', label=key, color=color, markersize=markersize)
-    sp_avg.plot(x_axis, (arc_hl-average)/tot_int, '.', label=key, color=color, markersize=markersize)
+    sp5.plot(x_axis, arc_hl, plot_fmt, label=key, color=color, markersize=markersize)
+    sp6.plot(x_axis, arc_hl/tot_int, plot_fmt, label=key, color=color, markersize=markersize)
+    sp_avg.plot(x_axis, (arc_hl-average)/tot_int, plot_fmt, label=key, color=color, markersize=markersize)
 
     xx = tot_int/(main_dict[moment]['n_bunches']['b1']+main_dict[moment]['n_bunches']['b2'])/1e11
     yy = arc_hl - main_dict[moment]['heat_load']['total_model']*53.45
@@ -105,8 +114,8 @@ for arc_ctr, key in enumerate(arc_list):
     xx_fit = np.arange(0.4, 2.5, 0.1)
     zeros.append(-fit[1]/fit[0])
 
-    sp7.plot(xx, yy, '.', label=key, color=color, markersize=markersize)
-    #sp7.plot(xx, main_dict[moment]['heat_load']['total_model']*53.45, '.', ls='--', color=color, markersize=markersize)
+    sp7.plot(xx, yy, plot_fmt, label=key, color=color, markersize=markersize)
+    #sp7.plot(xx, main_dict[moment]['heat_load']['total_model']*53.45, plot_fmt, ls='--', color=color, markersize=markersize)
     sp7.plot(xx_fit, yy_fit(xx_fit), color=color, lw=3)
     if arc_ctr == 0:
         sp7.axhline(160, color='black', lw=3)
@@ -164,17 +173,17 @@ for key, len_ in zip(quad_keys, quad_lens):
     divsior += np.isfinite(hl)
 average /= divisor
 
-sp5.plot(x_axis, average, '.', label='Average', color='black', markersize=markersize)
-sp6.plot(x_axis, average/tot_int, '.', label='Average', color='black', markersize=markersize)
-sp_avg.plot(x_axis, np.zeros_like(average), '.', label='Average', color='black', markersize=markersize)
+sp5.plot(x_axis, average, plot_fmt, label='Average', color='black', markersize=markersize)
+sp6.plot(x_axis, average/tot_int, plot_fmt, label='Average', color='black', markersize=markersize)
+sp_avg.plot(x_axis, np.zeros_like(average), plot_fmt, label='Average', color='black', markersize=markersize)
 
 for ctr, (key, len_) in enumerate(zip(quad_keys, quad_lens)):
     color = colorprog(ctr, quad_keys)
     this_hl = all_cells_dict[key]/len_
 
-    sp5.plot(x_axis, this_hl, '.', label=key, color=color, markersize=markersize)
-    sp6.plot(x_axis, this_hl/tot_int, '.', label=key, color=color, markersize=markersize)
-    sp_avg.plot(x_axis, (this_hl-average)/tot_int, '.', label=key, color=color, markersize=markersize)
+    sp5.plot(x_axis, this_hl, plot_fmt, label=key, color=color, markersize=markersize)
+    sp6.plot(x_axis, this_hl/tot_int, plot_fmt, label=key, color=color, markersize=markersize)
+    sp_avg.plot(x_axis, (this_hl-average)/tot_int, plot_fmt, label=key, color=color, markersize=markersize)
 
     xx = tot_int/(main_dict[moment]['n_bunches']['b1']+main_dict[moment]['n_bunches']['b2'])/1e11
     yy = this_hl - main_dict[moment]['heat_load']['total_model']
@@ -183,8 +192,8 @@ for ctr, (key, len_) in enumerate(zip(quad_keys, quad_lens)):
     xx_fit = np.arange(0.4, 2.5, 0.1)
     zeros.append(-fit[1]/fit[0])
 
-    sp7.plot(xx, yy, '.', label=key, color=color, markersize=markersize)
-    #sp7.plot(xx, main_dict[moment]['heat_load']['total_model']*53.45, '.', ls='--', color=color, markersize=markersize)
+    sp7.plot(xx, yy, plot_fmt, label=key, color=color, markersize=markersize)
+    #sp7.plot(xx, main_dict[moment]['heat_load']['total_model']*53.45, plot_fmt, ls='--', color=color, markersize=markersize)
     sp7.plot(xx_fit, yy_fit(xx_fit), color=color, lw=3)
 
 plt.setp(sp5.get_xticklabels(), visible = False)

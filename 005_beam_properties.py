@@ -9,11 +9,8 @@ import numpy as np
 import LHCMeasurementTools.mystyle as ms
 import LHCMeasurementTools.TimestampHelpers as TH
 from LHC_Heat_load_dict import mask_dict, main_dict
-from RcParams import init_pyplot
-init_pyplot()
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--pdsave', help='Save plots in pdijksta plot dir.', action='store_true')
 parser.add_argument('--savefig', help='Save plots with specified name.')
 parser.add_argument('--noshow', help='Do not call plt.show.', action='store_true')
 args = parser.parse_args()
@@ -84,9 +81,7 @@ sp4.grid('on')
 fig1.suptitle('At '+moment)
 fig1.subplots_adjust(right=0.7, left=0.15)
 
-if args.pdsave:
-    sf.pdijksta(figs)
-elif args.savefig:
+if args.savefig:
     for num in plt.get_fignums():
         fig = plt.figure(num)
         plt.suptitle('')
