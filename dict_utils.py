@@ -42,8 +42,45 @@ def operate_on_dicts(dict1, dict2, operator):
     recurse(dict1, dict2, new_dict)
     return new_dict
 
+
 def merge_dicts(dict1, dict2):
-    return operate_on_dicts(dict1, dict2, lambda x,y: np.concatenate([x,y]))
+    new_dict = copy.deepcopy(dict1)
+    nfills1 = len(dict1['filln'])
+    nfills2 = len(dict2['filln'])
+
+    def recurse(dict1, dict2, new_dict):
+        lkeys = list(set(dict1.keys()+dict2.keys()))
+        for key in lkeys:
+            if key in dict1:
+                tt = type(dict1[key])
+            else:
+                tt = type(dict2[key])
+            if tt == dict:
+                recurse(dict1[key],dict2[key], new_dict[key])
+            elif tt == str:
+                pass
+            elif tt == np.ndarray:
+                if key in dict1:
+                    array1 = dict1[key]
+                else:
+                    array1 = np.ones(nfills1)*np.nan
+                if key in dict2:
+                    array2 = dict2[key]
+                else:
+                    array2 = np.ones(nfills2)*np.nan
+                
+                new_dict[key] = np.concatenate([array1, array2])
+            else:
+                raise ValueError('Unexpected type %s behind key %s!' % (tt, key))
+
+    recurse(dict1, dict2, new_dict)
+    return new_dict
+
+
+
+
+#~ def merge_dicts(dict1, dict2):
+    #~ return operate_on_dicts(dict1, dict2, lambda x,y: np.concatenate([x,y]))
 
 
 re_sb = re.compile('^sb\+(\d+)_hrs$')

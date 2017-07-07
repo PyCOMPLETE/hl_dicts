@@ -1,31 +1,12 @@
-import os
-import cPickle
-from dict_utils import merge_dicts
-
-def get_full_heatload_dictionary():
-    iter_dict = None
-    this_directory = os.path.dirname(os.path.abspath(__file__))
-    for yy in [2015, 2016, 2017]:
-        #print yy
-        path = this_directory + '/large_heat_load_dict_%d_latest.pkl'%yy
-        with open(path, 'r') as f:
-            this_dict = cPickle.load(f)
-        #print this_dict['filln']
-        if iter_dict is None:
-            iter_dict = this_dict
-        else:
-            iter_dict = merge_dicts(iter_dict, this_dict)
-    return iter_dict
-
-main_dict = get_full_heatload_dictionary()
-
-#for old scripts
-main_dict = get_full_heatload_dictionary()
+import numpy as np
 import dict_utils as du
-mask_dict = du.mask_dict
+
+import LHC_Heat_load_dict as LHD
+import LHCMeasurementTools.LHC_Heatloads as HL
 
 
-#LDB naming
+#thishld = main_dict['stop_squeeze']['heat_load']
+
 def replace_single_hld_with_ldb_naming(thishld, use_dP):
 
     if use_dP:
@@ -68,7 +49,10 @@ def replace_single_hld_with_ldb_naming(thishld, use_dP):
     thishld['ldb_naming'] = output
 
 
+
 def replace_full_hldict_with_ldb_naming(main_dict, use_dP):
+
+    usedP = False
 
     replace_single_hld_with_ldb_naming(main_dict['hl_subtracted_offset'], use_dP)
     replace_single_hld_with_ldb_naming(main_dict['hl_integrated'], use_dP)
@@ -77,15 +61,9 @@ def replace_full_hldict_with_ldb_naming(main_dict, use_dP):
         if type(main_dict[kk]) is dict:
             if 'heat_load' in main_dict[kk]:
                 replace_single_hld_with_ldb_naming(main_dict[kk]['heat_load'], use_dP)
-                
-                
-def get_full_heatload_dictionary_ldb_naming(use_dP=False):
-    hldict = get_full_heatload_dictionary()
-    replace_full_hldict_with_ldb_naming(hldict, use_dP)
-    
-    return hldict
-    
-
-    
+            
+   
+maindict = LHD.get_full_heatload_dictionary().copy()
 
 
+replace_full_hldict_with_ldb_naming(maindict, use_dP=True)
