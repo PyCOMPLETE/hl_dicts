@@ -1,6 +1,7 @@
 import os
 import cPickle
 from dict_utils import merge_dicts
+import LHCMeasurementTools.LHC_Heatloads as HL
 
 def get_full_heatload_dictionary():
     iter_dict = None

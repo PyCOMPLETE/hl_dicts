@@ -14,14 +14,12 @@ def replace_single_hld_with_ldb_naming(thishld, use_dP):
     else:
         strdp = '_no_dP'
 
-
     output = {}
 
     # start from arc averages
     for ss in HL.sector_list():
         key = 'S%d_QBS_AVG_ARC.POSST' % ss
         output[key] = thishld['arc_averages'+strdp]['S%d'%ss]
-        
         
     #others
     varlist_tmb = []
@@ -67,3 +65,5 @@ maindict = LHD.get_full_heatload_dictionary().copy()
 
 
 replace_full_hldict_with_ldb_naming(maindict, use_dP=True)
+
+
