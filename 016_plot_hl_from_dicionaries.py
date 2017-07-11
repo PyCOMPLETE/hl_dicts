@@ -20,12 +20,11 @@ for kk in hldict.keys():
             list_moments.append(kk)
 
 
-parser = argparse.ArgumentParser(description='Plot the heat loads for one LHC fill')
+parser = argparse.ArgumentParser(description='Plot the heat loads from heat load dictionary')
 parser.add_argument('--varlists', help='Variable lists to plot. Choose from %s' % sorted(HL.heat_loads_plot_sets.keys()), nargs='+', default=['AVG_ARC'])
 parser.add_argument('--moment', help='Sample at %s' % sorted(list_moments))
 parser.add_argument('--custom_vars', help='Custom list of variables to plot', nargs='+', default=[])
 parser.add_argument('--colormap', help='chose between hsv and rainbow', default='hsv')
-parser.add_argument('--normtointensity', help='Normalize to beam intensity', action='store_true')
 parser.add_argument('--full-varname-in-legend', help='Do not shorten varnames.', action='store_true')
 parser.add_argument('--savein', help='Specify folder to save the output', default='cell_by_cell_plots')
 parser.add_argument('--with_press_drop', help='Use pressure drop for recalculated data.', action='store_true')
@@ -62,7 +61,7 @@ x_axis = hldict['filln']
 
 
 
-markersize = 12
+markersize = 8
 fontsz = 16
 
 
@@ -75,25 +74,26 @@ figs_integ = []
 figs_offset = []
 sp1 = None
 for ii, group_name in enumerate(group_names):
-    fig_h = pl.figure(ii, figsize=(8*1.8, 6*1.4))
+    fig_h = pl.figure(ii, figsize=(8*2, 6*1.4))
     figs.append(fig_h)
     fig_h.patch.set_facecolor('w')
         
-    spint = pl.subplot(3,1,1, sharex=sp1)
+    spint = pl.subplot2grid((10,2),(0,0), rowspan=4, colspan=1, sharex=sp1)
     sp1 = spint
-    sphlcell = pl.subplot2grid((3,1),(1,0), rowspan=2, colspan=1, sharex=sp1)
+    spnorm = pl.subplot2grid((10,2),(5,0), rowspan=5, colspan=1, sharex=sp1)
+    sphlcell = pl.subplot2grid((10,2),(0,1), rowspan=4, colspan=1, sharex=sp1)
+    spinteg = pl.subplot2grid((10,2),(5,1), rowspan=5, colspan=1)
     
     
-    figinteg_h = pl.figure(100+ii, figsize=(8, 6))
-    figs_integ.append(figinteg_h)
-    figinteg_h.patch.set_facecolor('w')
-    spinteg = pl.subplot(1,1,1)
+    # figinteg_h = pl.figure(100+ii, figsize=(8, 6))
+    # figs_integ.append(figinteg_h)
+    # figinteg_h.patch.set_facecolor('w')
+    # spinteg = pl.subplot(1,1,1)
 
     fig_offeset_h = pl.figure(200+ii, figsize=(8, 6))
     figs_offset.append(fig_offeset_h)
     fig_offeset_h.patch.set_facecolor('w')
     spoffs = pl.subplot(1,1,1, sharex=sp1)
-
     #plot n bunches
     spint.plot(x_axis, hldict[moment]['n_bunches']['b2'], '.r', markersize=markersize)
     spint.plot(x_axis, hldict[moment]['n_bunches']['b1'], '.b', markersize=markersize) 
@@ -121,14 +121,10 @@ for ii, group_name in enumerate(group_names):
         # compute normalized heat load
         normhl = hldict[moment]['heat_load']['ldb_naming'][var]/(hldict[moment]['intensity']['b1']+\
                         hldict[moment]['intensity']['b2'])
-        
-        if args.normtointensity:
-            to_plot = normhl
-        else:
-            to_plot = hldict[moment]['heat_load']['ldb_naming'][var]
 
         # plot heatload
-        sphlcell.plot(x_axis, to_plot, '.', color = colorcurr, markersize=markersize, label=label)
+        sphlcell.plot(x_axis, hldict[moment]['heat_load']['ldb_naming'][var], '.', color = colorcurr, markersize=markersize, label=label)
+        spnorm.plot(x_axis, normhl, '.', color = colorcurr, markersize=markersize, label=label)
         
         #plot integrated
         integ_hl_this = np.cumsum(hldict['hl_integrated']['ldb_naming'][var])
@@ -138,46 +134,39 @@ for ii, group_name in enumerate(group_names):
 
 
     spinteg.set_ylabel('Normalized heat load [W/p+]')
-    spinteg.set_xlabel('Normalized heat load [J]')
+    spinteg.set_xlabel('Integrated heat load [J]')
 
     spint.set_ylabel('Number of bunches')
-    if args.normtointensity:
-        sphlcell.set_ylabel('Normalized heat load [W/p+]')
-    else:
-        sphlcell.set_ylabel('Heat load [W]')
-    sphlcell.set_xlabel('Fill number')
-    sphlcell.legend(prop={'size':fontsz}, bbox_to_anchor=(1.05, 1.0),  loc='upper left')
+    spnorm.set_ylabel('Normalized heat load [W/p+]')
+    sphlcell.set_ylabel('Heat load [W]')
+    spnorm.set_xlabel('Fill number')
+    sphlcell.legend(prop={'size':fontsz}, bbox_to_anchor=(1.05, 1.035),  loc='upper left')
     
+    sphlcell.set_xlim(np.min(x_axis)+50, np.max(x_axis)+50)
 
-    for sp in [spint, sphlcell, spinteg]:
+    for sp in [spint, sphlcell, spinteg, spnorm]:
         sp.grid('on')
         sp.set_ylim(bottom=0)
         
     spoffs.grid('on')
     spoffs.set_ylabel('Subtracted offset [W]')
 
-    figinteg_h.subplots_adjust(bottom=.13)
-    fig_h.subplots_adjust(hspace=.32, right=.77)
+    fig_h.subplots_adjust(hspace=.20, right=.8, top=.92, bottom=.10, left=.08)
     
     
-    for fig in [figinteg_h, fig_h, fig_offeset_h]:
+    for fig in [fig_h, fig_offeset_h]:
         fig.suptitle(group_name+' at '+moment)#+'\n'+{True: 'with_dP', False: 'no_dP'}[args.with_press_drop])
         
 
 def save_evol(infolder='./'):
-    if args.normtointensity:
-        strfile = 'normheatload'
-    else:
-        strfile = 'heatload'
+    strfile = 'heatload'
     for fig in figs:
         fig.savefig(infolder+'/'+strfile+'_evol_'+fig._suptitle.get_text().replace(' ', '__')+'.png',  dpi=200)
 
+def save_offset(infolder='./'):
+    for fig in figs_offset:
+        fig.savefig(infolder+'/'+'hloffset_'+fig._suptitle.get_text().replace(' ', '__')+'.png',  dpi=200)
 
-def save_integ(infolder='./'):
-    strfile = 'scrubcurve_'
-
-    for fig in figs_integ:
-        fig.savefig(infolder+'/'+strfile+'_evol_'+fig._suptitle.get_text().replace(' ', '__')+'.png',  dpi=200)
 
 
 pl.show()
