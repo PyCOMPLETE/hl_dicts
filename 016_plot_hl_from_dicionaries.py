@@ -28,7 +28,7 @@ parser.add_argument('--colormap', help='chose between hsv and rainbow', default=
 parser.add_argument('--normtointensity', help='Normalize to beam intensity', action='store_true')
 parser.add_argument('--full-varname-in-legend', help='Do not shorten varnames.', action='store_true')
 parser.add_argument('--savein', help='Specify folder to save the output', default='cell_by_cell_plots')
-
+parser.add_argument('--with_press_drop', help='Use pressure drop for recalculated data.', action='store_true')
 
 parser.add_argument('--min_nbun', help='Remove fills with less than given number of bunches per beam', type=int)
 
@@ -44,7 +44,9 @@ if len(args.custom_vars)>0:
 moment=args.moment
 
 
-
+# reload the dictionary to include press drop
+if args.with_press_drop:
+    hldict = LHD.get_full_heatload_dictionary_ldb_naming(use_dP=args.with_press_drop)
 
 # mask load dictionary
 if args.min_nbun is not None:
@@ -70,6 +72,7 @@ ms.mystyle_arial(fontsz=fontsz, dist_tick_lab=8)
 N_figures = len(group_names)
 figs = []
 figs_integ = []
+figs_offset = []
 sp1 = None
 for ii, group_name in enumerate(group_names):
     fig_h = pl.figure(ii, figsize=(8*1.8, 6*1.4))
@@ -85,8 +88,12 @@ for ii, group_name in enumerate(group_names):
     figs_integ.append(figinteg_h)
     figinteg_h.patch.set_facecolor('w')
     spinteg = pl.subplot(1,1,1)
-    
-    
+
+    fig_offeset_h = pl.figure(200+ii, figsize=(8, 6))
+    figs_offset.append(fig_offeset_h)
+    fig_offeset_h.patch.set_facecolor('w')
+    spoffs = pl.subplot(1,1,1, sharex=sp1)
+
     #plot n bunches
     spint.plot(x_axis, hldict[moment]['n_bunches']['b2'], '.r', markersize=markersize)
     spint.plot(x_axis, hldict[moment]['n_bunches']['b1'], '.b', markersize=markersize) 
@@ -127,6 +134,8 @@ for ii, group_name in enumerate(group_names):
         integ_hl_this = np.cumsum(hldict['hl_integrated']['ldb_naming'][var])
         spinteg.plot(integ_hl_this, normhl, '.', color=colorcurr, markersize=markersize, label=label)
         
+        spoffs.plot(x_axis, hldict['hl_subtracted_offset']['ldb_naming'][var], '.', color=colorcurr, markersize=markersize, label=label)
+
 
     spinteg.set_ylabel('Normalized heat load [W/p+]')
     spinteg.set_xlabel('Normalized heat load [J]')
@@ -135,7 +144,7 @@ for ii, group_name in enumerate(group_names):
     if args.normtointensity:
         sphlcell.set_ylabel('Normalized heat load [W/p+]')
     else:
-        sphlcell.set_ylabel('Heat load [W/p+]')
+        sphlcell.set_ylabel('Heat load [W]')
     sphlcell.set_xlabel('Fill number')
     sphlcell.legend(prop={'size':fontsz}, bbox_to_anchor=(1.05, 1.0),  loc='upper left')
     
@@ -143,13 +152,16 @@ for ii, group_name in enumerate(group_names):
     for sp in [spint, sphlcell, spinteg]:
         sp.grid('on')
         sp.set_ylim(bottom=0)
+        
+    spoffs.grid('on')
+    spoffs.set_ylabel('Subtracted offset [W]')
 
     figinteg_h.subplots_adjust(bottom=.13)
     fig_h.subplots_adjust(hspace=.32, right=.77)
     
     
-    for fig in [figinteg_h, fig_h]:
-        fig.suptitle(group_name)
+    for fig in [figinteg_h, fig_h, fig_offeset_h]:
+        fig.suptitle(group_name+' at '+moment)#+'\n'+{True: 'with_dP', False: 'no_dP'}[args.with_press_drop])
         
 
 def save_evol(infolder='./'):
@@ -158,14 +170,14 @@ def save_evol(infolder='./'):
     else:
         strfile = 'heatload'
     for fig in figs:
-        fig.savefig(infolder+'/'+strfile+'_evol_'+fig._suptitle.get_text()+'.png',  dpi=200)
+        fig.savefig(infolder+'/'+strfile+'_evol_'+fig._suptitle.get_text().replace(' ', '__')+'.png',  dpi=200)
 
 
 def save_integ(infolder='./'):
     strfile = 'scrubcurve_'
 
     for fig in figs_integ:
-        fig.savefig(infolder+'/'+strfile+'_evol_'+fig._suptitle.get_text()+'.png',  dpi=200)
+        fig.savefig(infolder+'/'+strfile+'_evol_'+fig._suptitle.get_text().replace(' ', '__')+'.png',  dpi=200)
 
 
 pl.show()

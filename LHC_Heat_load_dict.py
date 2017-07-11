@@ -48,6 +48,8 @@ def replace_single_hld_with_ldb_naming(thishld, use_dP):
     for kk in HL.variable_lists_heatloads.keys():
         varlist_tmb+=HL.variable_lists_heatloads[kk]
     varlist_tmb+=HL.arcs_varnames_static
+    varlist_tmb+=HL.other_varnames_static
+    #~ print varlist_tmb
 
 
     for varname in varlist_tmb:

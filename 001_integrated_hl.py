@@ -89,7 +89,7 @@ sp.set_xlabel('Fill #')
 fig = ms.figure('Integrated heat load 2', figs)
 #fig.subplots_adjust(left=.06, right=.84, top=.93, hspace=.38, wspace=.42)
 
-# Arcs and Quads 
+# Arcs and Quads
 sp = None
 ylim_list = [(0,None), (0, None)]
 for ctr, (good_keys,main_key, title, ylim) in enumerate(zip(good_keys_list, main_keys, title_list, ylim_list)):
@@ -250,6 +250,9 @@ cells_dict = main_dict[moment]['heat_load']['all_cells']
 
 ctr = 0
 for key, hl in cells_dict.iteritems():
+    # Correct valve variables for standalone magnet:
+    # 05L4: QRLFF_05L4_CV947.POSST (to be checked)
+    # 05R4: QRLEB_05L4_CV947.POSST
     if key[:4] in ('05L4', '05R4') and not key.endswith('_2'):
         label = key[:4]+'_standalone'
         color = ['black', 'red'][ctr]
