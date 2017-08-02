@@ -16,7 +16,8 @@ from LHCMeasurementTools.LHC_BQM import blength
 from LHCMeasurementTools.SetOfHomogeneousVariables import SetOfHomogeneousNumericVariables
 from LHCMeasurementTools.LHC_Energy import energy
 
-sys.path.append('..')
+if '..' not in sys.path:
+    sys.path.append('..')
 import HeatLoadCalculators.impedance_heatload as hli
 import HeatLoadCalculators.synchrotron_radiation_heatload as hls
 
@@ -69,7 +70,7 @@ if args.year == 2017:
     fills_bmodes_file = base_folder + '/fills_and_bmodes.pkl'
     csv_file_names = ['fill_basic_data_csvs/basic_data_fill_%d.csv',
             'fill_bunchbybunch_data_csvs/bunchbybunch_data_fill_%d.csv']
-    filling_pattern_csv = '/afs/cern.ch/work/l/lhcscrub/LHC_fullRun2_analysis_scripts/filling_patterns.csv'
+    filling_pattern_csv = '/afs/cern.ch/work/l/lhcscrub/LHC_fullRun2_analysis_scripts/filling_patterns_2017.csv'
 elif args.year == 2016:
     base_folder = '/afs/cern.ch/project/spsecloud/LHC_2016_25ns/LHC_2016_25ns_beforeTS1/'
     child_folders = ['./']
@@ -277,8 +278,6 @@ for filln in fills_0:
     # Main part - obtain and store the variables of interest
     if process_fill:
         log_print('Fill %i is being processed.' % filln)
-
-        ## Populate output dict
 
         # Fill Number
         add_to_dict(output_dict, filln, ['filln'])

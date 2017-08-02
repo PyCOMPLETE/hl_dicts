@@ -48,7 +48,6 @@ for line in lines:
         filln, tt_hrs, tt_offset = line.split()
         fills_time_offset.append((int(filln), float(tt_hrs), float(tt_offset)))
 
-# Find new version
 pkl_file_name = hl_dict_dir + args.o
 
 logfile = pkl_file_name + '.log'
@@ -58,7 +57,7 @@ child_folders = ['./']
 fills_bmodes_file = base_folder + '/fills_and_bmodes.pkl'
 csv_file_names = ['fill_basic_data_csvs/basic_data_fill_%d.csv',
         'fill_bunchbybunch_data_csvs/bunchbybunch_data_fill_%d.csv']
-filling_pattern_csv = '/afs/cern.ch/work/l/lhcscrub/LHC_fullRun2_analysis_scripts/filling_patterns.csv'
+filling_pattern_csv = '/afs/cern.ch/work/l/lhcscrub/LHC_fullRun2_analysis_scripts/filling_patterns_2017.csv'
 
 if os.path.isfile(pkl_file_name):
     if int(input('Delete %s? Enter 0/1.' % pkl_file_name)) == 1:
