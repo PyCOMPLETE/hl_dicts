@@ -12,7 +12,7 @@ import LHC_Heat_load_dict as LHd
 
 import dict_utils as du
 
-large_hl_dict = LHd.get_full_heatload_dictionary()
+large_hl_dict = LHd.main_dict
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--pdsave', help='Save plots in pdijksta plot dir.', action='store_true')
@@ -64,18 +64,29 @@ def hl_normalized_delta(input_arrays, average, title, labels, suptitle=False, le
     sp6.set_title('Normalized by intensity')
     sp_avg.set_title('Delta to average')
 
+    min_avg, max_avg = np.inf, -np.inf
     for ctr, (arr, label) in enumerate(zip(input_arrays, labels)):
         color = ms.colorprog(ctr, input_arrays)
         sp5.plot(x_axis, arr, plot_fmt, color=color)
         sp6.plot(x_axis, arr/tot_int, plot_fmt, color=color, label=label)
-        sp_avg.plot(x_axis, (arr-average)/tot_int, plot_fmt, color=color)
+        yy_avg = (arr-average)/tot_int
+        min_avg, max_avg = min(min_avg, yy_avg.min()), max(max_avg, yy_avg.max())
+        sp_avg.plot(x_axis, yy_avg, plot_fmt, color=color)
 
     sp5.plot(x_axis, average,plot_fmt, color='black')
     sp6.plot(x_axis, average/tot_int,plot_fmt, color='black', label='Average')
     sp_avg.plot(x_axis, np.zeros_like(average),plot_fmt, color='black')
 
-    plt.setp(sp5.get_xticklabels(), visible = False)
-    plt.setp(sp6.get_xticklabels(), visible = False)
+    ylim_min, ylim_max = sp_avg.get_ylim()
+    delta = ylim_max - ylim_min
+    while ylim_max < max_avg:
+        ylim_max += delta*0.15
+    while ylim_min > min_avg:
+        ylim_min -= delta*0.15
+
+    sp_avg.set_ylim(ylim_min, ylim_max)
+    plt.setp(sp5.get_xticklabels(), visible=False)
+    plt.setp(sp6.get_xticklabels(), visible=False)
     sp6.legend(bbox_to_anchor=(1, 1), loc='upper left', title=legend_title)
     return sp5, sp6, sp_avg
 
