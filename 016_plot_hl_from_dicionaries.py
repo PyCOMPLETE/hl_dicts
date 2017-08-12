@@ -8,6 +8,9 @@ import LHCMeasurementTools.mystyle as ms
 
 import matplotlib.pyplot as pl
 
+from blacklists import device_blacklist
+
+
 
 # load heat load dictionary
 hldict = LHD.get_full_heatload_dictionary_ldb_naming()
@@ -26,9 +29,10 @@ parser.add_argument('--moment', help='Sample at %s' % sorted(list_moments))
 parser.add_argument('--custom_vars', help='Custom list of variables to plot', nargs='+', default=[])
 parser.add_argument('--colormap', help='chose between hsv and rainbow', default='hsv')
 parser.add_argument('--full-varname-in-legend', help='Do not shorten varnames.', action='store_true')
-parser.add_argument('--savein', help='Specify folder to save the output', default='cell_by_cell_plots')
-parser.add_argument('--with_press_drop', help='Use pressure drop for recalculated data.', action='store_true')
-
+parser.add_argument('--with-press-drop', help='Use pressure drop for recalculated data.', action='store_true')
+parser.add_argument('--ignore-device-blacklist', help='Use pressure drop for recalculated data.', action='store_true')
+#~ parser.add_argument('--subtract-offset', help='Subtract offset measured without beam', action='store_true') to be impelmented
+parser.add_argument('--reverse-vars-order', action='store_true')
 parser.add_argument('--min_nbun', help='Remove fills with less than given number of bunches per beam', type=int)
 
 
@@ -100,9 +104,15 @@ for ii, group_name in enumerate(group_names):
     
     
     varnames = dict_hl_groups[group_name]
+    
+    if args.reverse_vars_order:
+        varnames = varnames[::-1]
      
     for i_var, var in enumerate(varnames):
         colorcurr = ms.colorprog(i_prog=i_var, Nplots=len(varnames), cm=args.colormap)
+        
+        if var in device_blacklist and not args.ignore_device_blacklist:
+            continue
         
         # prepare label
         if args.full_varname_in_legend:
@@ -127,7 +137,7 @@ for ii, group_name in enumerate(group_names):
         spnorm.plot(x_axis, normhl, '.', color = colorcurr, markersize=markersize, label=label)
         
         #plot integrated
-        integ_hl_this = np.cumsum(hldict['hl_integrated']['ldb_naming'][var])
+        integ_hl_this = np.cumsum(np.nan_to_num(hldict['hl_integrated']['ldb_naming'][var]))
         spinteg.plot(integ_hl_this, normhl, '.', color=colorcurr, markersize=markersize, label=label)
         
         spoffs.plot(x_axis, hldict['hl_subtracted_offset']['ldb_naming'][var], '.', color=colorcurr, markersize=markersize, label=label)
@@ -143,6 +153,9 @@ for ii, group_name in enumerate(group_names):
     sphlcell.legend(prop={'size':fontsz}, bbox_to_anchor=(1.05, 1.035),  loc='upper left')
     
     sphlcell.set_xlim(np.min(x_axis)+50, np.max(x_axis)+50)
+    
+    spinteg.ticklabel_format(style='sci', scilimits=(0,0),axis='x')
+
 
     for sp in [spint, sphlcell, spinteg, spnorm]:
         sp.grid('on')

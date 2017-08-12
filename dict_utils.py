@@ -51,10 +51,12 @@ def merge_dicts(dict1, dict2):
     def recurse(dict1, dict2, new_dict):
         lkeys = list(set(dict1.keys()+dict2.keys()))
         for key in lkeys:
+
             if key in dict1:
                 tt = type(dict1[key])
             else:
                 tt = type(dict2[key])
+
             if tt == dict:
                 recurse(dict1[key],dict2[key], new_dict[key])
             elif tt == str:
@@ -68,7 +70,7 @@ def merge_dicts(dict1, dict2):
                     array2 = dict2[key]
                 else:
                     array2 = np.ones(nfills2)*np.nan
-                
+
                 new_dict[key] = np.concatenate([array1, array2])
             else:
                 raise ValueError('Unexpected type %s behind key %s!' % (tt, key))

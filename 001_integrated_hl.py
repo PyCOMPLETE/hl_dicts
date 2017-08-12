@@ -251,9 +251,10 @@ cells_dict = main_dict[moment]['heat_load']['all_cells']
 ctr = 0
 for key, hl in cells_dict.iteritems():
     # Correct valve variables for standalone magnet:
-    # 05L4: QRLFF_05L4_CV947.POSST (to be checked)
+    # [05L4: QRLFF_05L4_CV947.POSST (to be checked)]
+    # This was wrong (13.7.17)! correct 05L4 is 'QRLEB_05L4_QBS947.POSST'
     # 05R4: QRLEB_05L4_CV947.POSST
-    if key[:4] in ('05L4', '05R4') and not key.endswith('_2'):
+    if (key[:4] == '05L4' and key.endswith('_2')) or (key[:4] == '05R4' and not key.endswith('_2')):
         label = key[:4]+'_standalone'
         color = ['black', 'red'][ctr]
         norm_hl = hl / tot_int
