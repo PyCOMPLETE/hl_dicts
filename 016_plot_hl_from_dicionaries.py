@@ -34,6 +34,8 @@ parser.add_argument('--ignore-device-blacklist', help='Use pressure drop for rec
 #~ parser.add_argument('--subtract-offset', help='Subtract offset measured without beam', action='store_true') to be impelmented
 parser.add_argument('--reverse-vars-order', action='store_true')
 parser.add_argument('--min_nbun', help='Remove fills with less than given number of bunches per beam', type=int)
+parser.add_argument('--end_filln_range', help='End of the filln range to plot', type=int)
+parser.add_argument('--start_filln_range', help='Start of the filln range to plot', type=int)
 
 
 args = parser.parse_args()
@@ -55,7 +57,12 @@ if args.with_press_drop:
 if args.min_nbun is not None:
     mask = (hldict[moment]['n_bunches']['b1']+hldict[moment]['n_bunches']['b2'])/2. > args.min_nbun
     hldict = du.mask_dict(hldict,mask)
-
+if args.end_filln_range is not None:
+    mask = hldict['filln'] <= args.end_filln_range
+    hldict = du.mask_dict(hldict,mask) 
+if args.start_filln_range is not None:
+    mask = hldict['filln'] >= args.start_filln_range
+    hldict = du.mask_dict(hldict,mask)
 
 # load default plot sets
 dict_hl_groups = HL.heat_loads_plot_sets

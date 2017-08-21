@@ -33,7 +33,7 @@ hl_dict_dir = './'
 parser = argparse.ArgumentParser()
 parser.add_argument('year', type=int, choices=(2015, 2016, 2017))
 parser.add_argument('-o', help='Force output filename', type=str)
-parser.add_argument('--fills', help='Force fill list', nargs='+')
+parser.add_argument('--fills', help='Force fill list', nargs='+', type=int)
 parser.add_argument('--debug', help='Print debug info', action='store_true')
 args = parser.parse_args()
 
@@ -172,7 +172,6 @@ def get_time(kk):
 # Filling numbers
 with open(fills_bmodes_file, 'r') as f:
     fills_and_bmodes = cPickle.load(f)
-fills_0 = sorted(fills_and_bmodes.keys())
 
 # Model heat load calculators
 imp_calc = hli.HeatLoadCalculatorImpedanceLHCArc()
@@ -182,7 +181,10 @@ sr_calc = hls.HeatLoadCalculatorSynchrotronRadiationLHCArc()
 output_dict = {}
 
 if args.fills:
-    fills_0 = sorted([int(x) for x in args.fills])
+    fills_0 = sorted(args.fills)
+else:
+    fills_0 = sorted(fills_and_bmodes.keys())
+
 for filln in fills_0:
     process_fill = True
 
@@ -251,7 +253,7 @@ for filln in fills_0:
         while n_tries < 5:
             n_tries += 1
             try:
-                qbs_ob_special = qf.special_qbs_fill_aligned(filln, recompute_if_missing=True)
+                qbs_ob_special = qf.special_qbs_fill(filln, recompute_if_missing=True, aligned=True)
                 break
             except IOError as e:
                 log_print('Fill %i: No special cell recomputed data: %s!' % (filln,e))
@@ -348,7 +350,7 @@ for filln in fills_0:
                 else:
                     all_blen = blength_bx[beam].nearest_older_sample(tt)
                     mask_nonzero = all_blen != 0
-                    if sum(mask_nonzero) == 0:
+                    if np.sum(mask_nonzero) == 0:
                         avg, sig = 0, 0
                     else:
                         avg = np.mean(all_blen[mask_nonzero])
@@ -370,7 +372,7 @@ for filln in fills_0:
                     bint = fbct_bx[beam].nearest_older_sample(tt)
                     min_int = 0.1 * max(bint)
                     mask_filled = bint > min_int
-                n_bunches = sum(mask_filled)
+                n_bunches = np.sum(mask_filled)
                 n_bunches_bx[beam] = n_bunches
                 this_add_to_dict(n_bunches, ['n_bunches', 'b%i' % beam])
 
