@@ -36,6 +36,7 @@ parser.add_argument('--reverse-vars-order', action='store_true')
 parser.add_argument('--min_nbun', help='Remove fills with less than given number of bunches per beam', type=int)
 parser.add_argument('--end_filln_range', help='End of the filln range to plot', type=int)
 parser.add_argument('--start_filln_range', help='Start of the filln range to plot', type=int)
+parser.add_argument('--subtract_moment', help = 'Subtract heat load from specified moment')
 
 
 args = parser.parse_args()
@@ -63,6 +64,7 @@ if args.end_filln_range is not None:
 if args.start_filln_range is not None:
     mask = hldict['filln'] >= args.start_filln_range
     hldict = du.mask_dict(hldict,mask)
+
 
 # load default plot sets
 dict_hl_groups = HL.heat_loads_plot_sets
@@ -138,14 +140,24 @@ for ii, group_name in enumerate(group_names):
         # compute normalized heat load
         normhl = hldict[moment]['heat_load']['ldb_naming'][var]/(hldict[moment]['intensity']['b1']+\
                         hldict[moment]['intensity']['b2'])
+                        
+        if args.subtract_moment is not None:
+            hl_subtract = hldict[ args.subtract_moment]['heat_load']['ldb_naming'][var]
+            hl_subtract_norm = hldict[ args.subtract_moment]['heat_load']['ldb_naming'][var]/(hldict[args.subtract_moment]['intensity']['b1']+\
+                        hldict[args.subtract_moment]['intensity']['b2'])
+            substring = ' minus '+args.subtract_moment
+        else:
+            hl_subtract = 0.
+            hl_subtract_norm = 0.
+            substring = ''
 
         # plot heatload
-        sphlcell.plot(x_axis, hldict[moment]['heat_load']['ldb_naming'][var], '.', color = colorcurr, markersize=markersize, label=label)
-        spnorm.plot(x_axis, normhl, '.', color = colorcurr, markersize=markersize, label=label)
+        sphlcell.plot(x_axis, hldict[moment]['heat_load']['ldb_naming'][var]-hl_subtract, '.', color = colorcurr, markersize=markersize, label=label)
+        spnorm.plot(x_axis, normhl-hl_subtract_norm, '.', color = colorcurr, markersize=markersize, label=label)
         
         #plot integrated
         integ_hl_this = np.cumsum(np.nan_to_num(hldict['hl_integrated']['ldb_naming'][var]))
-        spinteg.plot(integ_hl_this, normhl, '.', color=colorcurr, markersize=markersize, label=label)
+        spinteg.plot(integ_hl_this, normhl-hl_subtract_norm, '.', color=colorcurr, markersize=markersize, label=label)
         
         spoffs.plot(x_axis, hldict['hl_subtracted_offset']['ldb_naming'][var], '.', color=colorcurr, markersize=markersize, label=label)
 
@@ -175,7 +187,7 @@ for ii, group_name in enumerate(group_names):
     
     
     for fig in [fig_h, fig_offeset_h]:
-        fig.suptitle(group_name+' at '+moment)#+'\n'+{True: 'with_dP', False: 'no_dP'}[args.with_press_drop])
+        fig.suptitle(group_name+' at '+moment+substring)#+'\n'+{True: 'with_dP', False: 'no_dP'}[args.with_press_drop])
         
 
 def save_evol(infolder='./'):
