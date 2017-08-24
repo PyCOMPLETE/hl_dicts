@@ -128,14 +128,15 @@ for ii, group_name in enumerate(group_names):
             label = var
         else:
             label = ''
-            for st in var.split('.POSST')[0].split('_'):
+            split = var.split('.POSST')
+            for st in split[0].split('_'):
                 if 'QRL' in st or 'QBS' in st or 'AVG' in st or 'ARC' in st:
                     pass
                 else:
                     label += st + ' '
             label = label[:-1]
-
-
+            if len(split) > 1:
+                label += ' %s' % split[-1].replace('_','')
 
         # compute normalized heat load
         normhl = hldict[moment]['heat_load']['ldb_naming'][var]/(hldict[moment]['intensity']['b1']+\

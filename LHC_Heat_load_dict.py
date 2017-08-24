@@ -52,6 +52,8 @@ def replace_single_hld_with_ldb_naming(thishld, use_dP):
             cell = varname.split('_')[1]
             kkk = cell+special_id
             output[varname] = thishld['special_cells'][kkk]
+            output[varname+'_B1'] = thishld['special_cells'][kkk+'_1']
+            output[varname+'_B2'] = thishld['special_cells'][kkk+'_2']
         elif varname.startswith('QRLEB_05L4'):
             output[varname] = thishld['all_cells']['05L4_947_comb']
         elif varname.startswith('QRLEB_05R4'):

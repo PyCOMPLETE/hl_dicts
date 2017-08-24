@@ -9,11 +9,9 @@ import argparse
 import numpy as np
 
 import LHCMeasurementTools.TimberManager as tm
-import LHCMeasurementTools.LHC_Heatloads as hl
 from LHCMeasurementTools.LHC_FBCT import FBCT
 from LHCMeasurementTools.LHC_BCT import BCT
 from LHCMeasurementTools.LHC_BQM import blength
-from LHCMeasurementTools.SetOfHomogeneousVariables import SetOfHomogeneousNumericVariables
 from LHCMeasurementTools.LHC_Energy import energy
 
 if '..' not in sys.path:
@@ -132,6 +130,8 @@ def cast_to_na_recursively(dictionary, assure_length=None):
             dictionary[key] = np.array(item)
             if assure_length is not None and len(dictionary[key]) != assure_length:
                 log_print('Expected length: %i, Actual length: %i for key %s' % (assure_length, len(dictionary[key]), key))
+        elif type(item) is str:
+            pass
         else:
             log_print('Unexpected type in dictionary for key %s' % key)
 
@@ -198,7 +198,8 @@ else:
     output_dict = {}
 
 if args.update:
-    fills_0 = sorted(list(set(fills_and_bmodes.keys()) - set(output_dict['filln'])))
+    min_fill = max(output_dict['filln']) + 1
+    fills_0 = sorted(filter(lambda x: x >= min_fill, fills_and_bmodes))
 elif args.fills:
     fills_0 = sorted(args.fills)
 else:
@@ -283,15 +284,19 @@ for filln in fills_0:
             log_print('Fill %i: Recomputed special cell data read attempt failed!' % filln)
 
     if process_fill:
-        arc_averages = {use_dP: qf.compute_qbs_arc_avg(qbs_ob[use_dP]) for use_dP in (True, False)}
+        arc_averages = {}
+        for use_dP in (True, False):
+            arc_averages[use_dP] =  qf.compute_qbs_arc_avg(qbs_ob[use_dP])
 
     ## Allocate objects that are used later
     if process_fill:
         try:
             en_ob      = energy(fill_dict, beam=1)
-            bct_bx     = {beam_n: BCT    (fill_dict, beam=beam_n) for beam_n in (1,2)}
-            blength_bx = {beam_n: blength(fill_dict, beam=beam_n) for beam_n in (1,2)}
-            fbct_bx    = {beam_n: FBCT   (fill_dict, beam=beam_n) for beam_n in (1,2)}
+            bct_bx, blength_bx, fbct_bx = {}, {}, {}
+            for beam_n in (1,2):
+                bct_bx[beam_n]     = BCT    (fill_dict, beam=beam_n)
+                blength_bx[beam_n] = blength(fill_dict, beam=beam_n)
+                fbct_bx[beam_n]    = FBCT   (fill_dict, beam=beam_n)
         except ValueError as e:
             log_print('Fill %i: %s' % (filln, e))
             process_fill = False
@@ -436,7 +441,10 @@ cast_to_na_recursively(output_dict, assure_length=n_fills)
 with open(logfile, 'r') as f:
     metadata = '%s\n' % sys.argv
     metadata += f.read()
-    output_dict['LOGFILE'] = metadata
+    if 'LOGFILE' in output_dict:
+        output_dict['LOGFILE'] += metadata
+    else:
+        output_dict['LOGFILE'] = metadata
     output_dict['SCRIPT'] = script
 
 # Save dict to pkl
