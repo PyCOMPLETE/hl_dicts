@@ -1,5 +1,5 @@
 from __future__ import division, print_function
-import cPickle
+import cPickle as pickle
 import re
 import time
 import os
@@ -35,10 +35,14 @@ parser.add_argument('year', type=int, choices=(2015, 2016, 2017))
 parser.add_argument('-o', help='Force output filename', type=str)
 parser.add_argument('--fills', help='Force fill list', nargs='+', type=int)
 parser.add_argument('--debug', help='Print debug info', action='store_true')
+parser.add_argument('--update', help='Update dict instead of redo all', action='store_true')
 args = parser.parse_args()
 
 if args.fills and not args.o:
     raise ValueError('If fills are specified, thet output has to, as well!')
+
+if args.fills and args.update:
+    raise ValueError('If the dict is to be updated, the fills are found automatically!')
 
 if args.debug:
     debugf = open('debug.txt', 'w')
@@ -131,6 +135,14 @@ def cast_to_na_recursively(dictionary, assure_length=None):
         else:
             log_print('Unexpected type in dictionary for key %s' % key)
 
+def cast_to_list_recursively(dictionary):
+    for key, item in dictionary.iteritems():
+        if type(item) is dict:
+            cast_to_list_recursively(item)
+        elif type(item) is np.ndarray:
+            dictionary[key] = list(item)
+
+
 def data_integration(timestamps, values, key):
     # Trapezoidal integration
     output = 0.
@@ -171,16 +183,23 @@ def get_time(kk):
 
 # Filling numbers
 with open(fills_bmodes_file, 'r') as f:
-    fills_and_bmodes = cPickle.load(f)
+    fills_and_bmodes = pickle.load(f)
 
 # Model heat load calculators
 imp_calc = hli.HeatLoadCalculatorImpedanceLHCArc()
 sr_calc = hls.HeatLoadCalculatorSynchrotronRadiationLHCArc()
 
 # Main loop
-output_dict = {}
+if args.update:
+    with open(latest_pkl, 'r') as f:
+        output_dict = pickle.load(f)
+        cast_to_list_recursively(output_dict)
+else:
+    output_dict = {}
 
-if args.fills:
+if args.update:
+    fills_0 = sorted(list(set(fills_and_bmodes.keys()) - set(output_dict['filln'])))
+elif args.fills:
     fills_0 = sorted(args.fills)
 else:
     fills_0 = sorted(fills_and_bmodes.keys())
@@ -422,7 +441,7 @@ with open(logfile, 'r') as f:
 
 # Save dict to pkl
 with open(pkl_file_name, 'w') as f:
-    cPickle.dump(output_dict, f, protocol=-1)
+    pickle.dump(output_dict, f, protocol=-1)
 
 # Symlink latest pkl
 if not args.o:
