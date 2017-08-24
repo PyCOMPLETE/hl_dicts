@@ -1,7 +1,9 @@
+import sys
 import re
 import copy
 import cPickle
-from config_qbs import config_qbs as cq
+if '..' not in sys.path: sys.path.append('..')
+from GasFlowHLCalculator.config_qbs import config_qbs as cq
 
 import numpy as np
 

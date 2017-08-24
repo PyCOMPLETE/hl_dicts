@@ -60,7 +60,7 @@ if args.min_nbun is not None:
     hldict = du.mask_dict(hldict,mask)
 if args.end_filln_range is not None:
     mask = hldict['filln'] <= args.end_filln_range
-    hldict = du.mask_dict(hldict,mask) 
+    hldict = du.mask_dict(hldict,mask)
 if args.start_filln_range is not None:
     mask = hldict['filln'] >= args.start_filln_range
     hldict = du.mask_dict(hldict,mask)
@@ -90,14 +90,14 @@ for ii, group_name in enumerate(group_names):
     fig_h = pl.figure(ii, figsize=(8*2, 6*1.4))
     figs.append(fig_h)
     fig_h.patch.set_facecolor('w')
-        
+
     spint = pl.subplot2grid((10,2),(0,0), rowspan=4, colspan=1, sharex=sp1)
     sp1 = spint
     spnorm = pl.subplot2grid((10,2),(5,0), rowspan=5, colspan=1, sharex=sp1)
     sphlcell = pl.subplot2grid((10,2),(0,1), rowspan=4, colspan=1, sharex=sp1)
     spinteg = pl.subplot2grid((10,2),(5,1), rowspan=5, colspan=1)
-    
-    
+
+
     # figinteg_h = pl.figure(100+ii, figsize=(8, 6))
     # figs_integ.append(figinteg_h)
     # figinteg_h.patch.set_facecolor('w')
@@ -109,20 +109,20 @@ for ii, group_name in enumerate(group_names):
     spoffs = pl.subplot(1,1,1, sharex=sp1)
     #plot n bunches
     spint.plot(x_axis, hldict[moment]['n_bunches']['b2'], '.r', markersize=markersize)
-    spint.plot(x_axis, hldict[moment]['n_bunches']['b1'], '.b', markersize=markersize) 
-    
-    
+    spint.plot(x_axis, hldict[moment]['n_bunches']['b1'], '.b', markersize=markersize)
+
+
     varnames = dict_hl_groups[group_name]
-    
+
     if args.reverse_vars_order:
         varnames = varnames[::-1]
-     
+
     for i_var, var in enumerate(varnames):
         colorcurr = ms.colorprog(i_prog=i_var, Nplots=len(varnames), cm=args.colormap)
-        
+
         if var in device_blacklist and not args.ignore_device_blacklist:
             continue
-        
+
         # prepare label
         if args.full_varname_in_legend:
             label = var
@@ -134,13 +134,13 @@ for ii, group_name in enumerate(group_names):
                 else:
                     label += st + ' '
             label = label[:-1]
-        
-        
-        
+
+
+
         # compute normalized heat load
         normhl = hldict[moment]['heat_load']['ldb_naming'][var]/(hldict[moment]['intensity']['b1']+\
                         hldict[moment]['intensity']['b2'])
-                        
+
         if args.subtract_moment is not None:
             hl_subtract = hldict[ args.subtract_moment]['heat_load']['ldb_naming'][var]
             hl_subtract_norm = hldict[ args.subtract_moment]['heat_load']['ldb_naming'][var]/(hldict[args.subtract_moment]['intensity']['b1']+\
@@ -154,11 +154,11 @@ for ii, group_name in enumerate(group_names):
         # plot heatload
         sphlcell.plot(x_axis, hldict[moment]['heat_load']['ldb_naming'][var]-hl_subtract, '.', color = colorcurr, markersize=markersize, label=label)
         spnorm.plot(x_axis, normhl-hl_subtract_norm, '.', color = colorcurr, markersize=markersize, label=label)
-        
+
         #plot integrated
         integ_hl_this = np.cumsum(np.nan_to_num(hldict['hl_integrated']['ldb_naming'][var]))
         spinteg.plot(integ_hl_this, normhl-hl_subtract_norm, '.', color=colorcurr, markersize=markersize, label=label)
-        
+
         spoffs.plot(x_axis, hldict['hl_subtracted_offset']['ldb_naming'][var], '.', color=colorcurr, markersize=markersize, label=label)
 
 
@@ -170,25 +170,25 @@ for ii, group_name in enumerate(group_names):
     sphlcell.set_ylabel('Heat load [W]')
     spnorm.set_xlabel('Fill number')
     sphlcell.legend(prop={'size':fontsz}, bbox_to_anchor=(1.05, 1.035),  loc='upper left')
-    
+
     sphlcell.set_xlim(np.min(x_axis)+50, np.max(x_axis)+50)
-    
+
     spinteg.ticklabel_format(style='sci', scilimits=(0,0),axis='x')
 
 
     for sp in [spint, sphlcell, spinteg, spnorm]:
         sp.grid('on')
         sp.set_ylim(bottom=0)
-        
+
     spoffs.grid('on')
     spoffs.set_ylabel('Subtracted offset [W]')
 
     fig_h.subplots_adjust(hspace=.20, right=.8, top=.92, bottom=.10, left=.08)
-    
-    
+
+
     for fig in [fig_h, fig_offeset_h]:
         fig.suptitle(group_name+' at '+moment+substring)#+'\n'+{True: 'with_dP', False: 'no_dP'}[args.with_press_drop])
-        
+
 
 def save_evol(infolder='./'):
     strfile = 'heatload'
