@@ -291,7 +291,7 @@ for filln in fills_0:
     ## Allocate objects that are used later
     if process_fill:
         try:
-            en_ob      = energy(fill_dict, beam=1)
+            en_ob = energy(fill_dict, beam=1)
             bct_bx, blength_bx, fbct_bx = {}, {}, {}
             for beam_n in (1,2):
                 bct_bx[beam_n]     = BCT    (fill_dict, beam=beam_n)
