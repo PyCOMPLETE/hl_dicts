@@ -21,7 +21,21 @@ parser.add_argument('--pdsave', help='Save plots in pdijksta plot dir.', action=
 parser.add_argument('--savefig', help='Save plots with specified name.')
 parser.add_argument('--noshow', help='Do not call plt.show.', action='store_true')
 parser.add_argument('--scrubbing', help='Use scrubbing dict', action='store_true')
+parser.add_argument('--no-show-delta', help='Do not show the delta to average subplot.', action='store_true')
+parser.add_argument('--no-suptitle', action='store_true')
 args = parser.parse_args()
+
+show_delta = not args.no_show_delta
+
+if show_delta:
+    n_subplots = 3
+    figsize = (12,10)
+else:
+    n_subplots = 2
+    figsize = (12, 6.66)
+
+def figure(*args, **kwargs):
+    return ms.figure(*args, figsize=figsize, **kwargs)
 
 if args.scrubbing:
     moment = 'scrubbing'
@@ -53,32 +67,35 @@ if filln_range is not None:
 if date_on_xaxis:
     time_in = 'datetime'
     t_plot_tick_h = None #'4weeks'
-    time_conv = TH.TimeConverter(time_in, t_plot_tick_h=t_plot_tick_h)
+    time_conv = TH.TimeConverter(time_in, t_plot_tick_h=t_plot_tick_h, show_month_year=True)
     tc = time_conv.from_unix
     x_axis = tc(main_dict[moment]['t_stamps'])
 else:
     x_axis = main_dict['filln']
 
 
-fig2 = ms.figure('Arc heat loads')
+fig2 = figure('Arc heat loads')
 
-sp5 = plt.subplot(3,1,1, sharex=None)
+sp5 = plt.subplot(n_subplots,1,1, sharex=None)
 sp1 = sp5
 sp5.grid('on')
 sp5.set_ylim(0,200)
 
-sp6 = plt.subplot(3,1,2, sharex=sp1)
+sp6 = plt.subplot(n_subplots,1,2, sharex=sp1)
 sp6.grid('on')
 sp6.set_ylim(0, 6e-13)
 
-sp_avg = plt.subplot(3,1,3, sharex=sp1)
-sp_avg.grid('on')
+if show_delta:
+    sp_avg = plt.subplot(n_subplots,1,3, sharex=sp1)
+    sp_avg.grid('on')
+    sp_avg.set_title('Normalized arc heat loads - Delta to average')
+else:
+    sp_avg = None
 
 sp5.set_title('Arc heat loads')
 sp6.set_title('Normalized arc heat loads.')
-sp_avg.set_title('Normalized arc heat loads - Delta to average')
 
-fig3 = ms.figure('Intensity - heat load fit')
+fig3 = figure('Intensity - heat load fit')
 
 sp7 = plt.subplot(1,1,1)
 sp7.grid('on')
@@ -97,7 +114,8 @@ average /= divisor
 tot_int = main_dict[moment]['intensity']['total']
 sp5.plot(x_axis, average, plot_fmt, label='Average', color='black', markersize=markersize)
 sp6.plot(x_axis, average/tot_int, plot_fmt, label='Average', color='black', markersize=markersize)
-sp_avg.plot(x_axis, np.zeros_like(average), plot_fmt, label='Average', color='black', markersize=markersize)
+if show_delta:
+    sp_avg.plot(x_axis, np.zeros_like(average), plot_fmt, label='Average', color='black', markersize=markersize)
 
 for arc_ctr, key in enumerate(arc_list):
     color = colorprog(arc_ctr, 8)
@@ -105,7 +123,8 @@ for arc_ctr, key in enumerate(arc_list):
 
     sp5.plot(x_axis, arc_hl, plot_fmt, label=key, color=color, markersize=markersize)
     sp6.plot(x_axis, arc_hl/tot_int, plot_fmt, label=key, color=color, markersize=markersize)
-    sp_avg.plot(x_axis, (arc_hl-average)/tot_int, plot_fmt, label=key, color=color, markersize=markersize)
+    if show_delta:
+        sp_avg.plot(x_axis, (arc_hl-average)/tot_int, plot_fmt, label=key, color=color, markersize=markersize)
 
     xx = tot_int/(main_dict[moment]['n_bunches']['b1']+main_dict[moment]['n_bunches']['b2'])/1e11
     yy = arc_hl - main_dict[moment]['heat_load']['total_model']*53.45
@@ -124,14 +143,16 @@ arc_average = average
 
 
 #sp6.legend(bbox_to_anchor=(1.22,1.04))
-legend(sp6)
-sp5.set_ylabel('Heat load [W/hcell]')
-sp6.set_ylabel('Norm. heat load [W/hcell/p+]')
-sp_avg.set_ylabel('$\Delta$ norm. HL [W/hcell/p+]')
-sp7.set_ylabel('Heat load [W/hcell]')
+legend(sp5)
+sp5.set_ylabel('Heat load from e-cloud [W/hcell]')
+sp6.set_ylabel('Norm. HL from EC [W/hcell/p+]')
+if show_delta:
+    sp_avg.set_ylabel('$\Delta$ norm. HL [W/hcell/p+]')
+sp7.set_ylabel('Heat load from e-cloud [W/hcell]')
 sp7.set_xlabel('Bunch intensity [1e11]')
 legend(sp7)
-plt.setp(sp5.get_xticklabels(), visible = False)
+if show_delta:
+    plt.setp(sp5.get_xticklabels(), visible = False)
 
 if date_on_xaxis:
     time_conv.set_x_for_plot(fig2, sp1)
@@ -146,24 +167,27 @@ def get_len(q6_str):
     return HL.magnet_length['Q6s_IR%i' % q6_nr][0]
 quad_lens = map(get_len, quad_keys)
 
-fig4 = ms.figure('Quad heat loads')
-sp5 = plt.subplot(3,1,1, sharex=sp1)
-sp6 = plt.subplot(3,1,2, sharex=sp1)
-sp_avg = plt.subplot(3,1,3, sharex=sp1)
+fig4 = figure('Quad heat loads')
+sp5 = plt.subplot(n_subplots,1,1, sharex=sp1)
+sp6 = plt.subplot(n_subplots,1,2, sharex=sp1)
+
+if show_delta:
+    sp_avg = plt.subplot(3,1,3, sharex=sp1)
+    sp_avg.set_title('Normalized quad heat loads - Delta to average')
+    sp_avg.set_ylabel('Quad heat loads [W/m/p+]')
+    sp_avg.grid(True)
 
 sp5.set_title('Quad heat loads')
 sp6.set_title('Normalized quad heat loads.')
-sp_avg.set_title('Normalized quad heat loads - Delta to average')
 
 sp5.set_ylabel('Quad heat loads [W/m]')
 sp6.set_ylabel('Quad heat loads [W/m/p+]')
-sp_avg.set_ylabel('Quad heat loads [W/m/p+]')
 
-fig5 = ms.figure('Quad intensity fit')
+fig5 = figure('Quad intensity fit')
 sp7 = plt.subplot(1,1,1)
 sp7.grid('on')
 
-for sp in sp5, sp6, sp_avg:
+for sp in sp5, sp6:
     sp.grid(True)
 
 average, divsior = 0,0
@@ -175,7 +199,9 @@ average /= divisor
 
 sp5.plot(x_axis, average, plot_fmt, label='Average', color='black', markersize=markersize)
 sp6.plot(x_axis, average/tot_int, plot_fmt, label='Average', color='black', markersize=markersize)
-sp_avg.plot(x_axis, np.zeros_like(average), plot_fmt, label='Average', color='black', markersize=markersize)
+
+if show_delta:
+    sp_avg.plot(x_axis, np.zeros_like(average), plot_fmt, label='Average', color='black', markersize=markersize)
 
 for ctr, (key, len_) in enumerate(zip(quad_keys, quad_lens)):
     color = colorprog(ctr, quad_keys)
@@ -183,7 +209,8 @@ for ctr, (key, len_) in enumerate(zip(quad_keys, quad_lens)):
 
     sp5.plot(x_axis, this_hl, plot_fmt, label=key, color=color, markersize=markersize)
     sp6.plot(x_axis, this_hl/tot_int, plot_fmt, label=key, color=color, markersize=markersize)
-    sp_avg.plot(x_axis, (this_hl-average)/tot_int, plot_fmt, label=key, color=color, markersize=markersize)
+    if show_delta:
+        sp_avg.plot(x_axis, (this_hl-average)/tot_int, plot_fmt, label=key, color=color, markersize=markersize)
 
     xx = tot_int/(main_dict[moment]['n_bunches']['b1']+main_dict[moment]['n_bunches']['b2'])/1e11
     yy = this_hl - main_dict[moment]['heat_load']['total_model']
@@ -196,22 +223,25 @@ for ctr, (key, len_) in enumerate(zip(quad_keys, quad_lens)):
     #sp7.plot(xx, main_dict[moment]['heat_load']['total_model']*53.45, plot_fmt, ls='--', color=color, markersize=markersize)
     sp7.plot(xx_fit, yy_fit(xx_fit), color=color, lw=3)
 
-plt.setp(sp5.get_xticklabels(), visible = False)
-plt.setp(sp6.get_xticklabels(), visible = False)
-legend(sp6)
+if show_delta:
+    plt.setp(sp5.get_xticklabels(), visible = False)
+    plt.setp(sp6.get_xticklabels(), visible = False)
+legend(sp5)
 legend(sp7)
 
 
 for fig in [fig2, fig3, fig4, fig5]:
-    fig.suptitle('At '+moment)
+    if args.no_suptitle:
+        fig.suptitle('')
+    else:
+        fig.suptitle('At '+moment)
     fig.subplots_adjust(right=0.7, left=0.15)
 
 if args.pdsave:
-    sf.pdijksta(figs)
+    sf.saveall_pdijksta()
 elif args.savefig:
     for num in plt.get_fignums():
         fig = plt.figure(num)
-        plt.suptitle('')
         fig.subplots_adjust(right=0.85, wspace=0.75, hspace=.38, bottom=0.1)
         fig.savefig(os.path.expanduser(args.savefig) + '_%i.png' % num)
 

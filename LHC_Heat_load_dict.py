@@ -3,6 +3,8 @@ import cPickle
 import dict_utils as du
 import LHCMeasurementTools.LHC_Heatloads as HL
 
+arc_list = 'S12 S23 S34 S45 S56 S67 S78 S81'.split()
+
 # For imports from this module
 merge_dicts = du.merge_dicts
 mask_dict = du.mask_dict
