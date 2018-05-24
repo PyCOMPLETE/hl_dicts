@@ -29,7 +29,7 @@ hl_dict_dir = './'
 
 # Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('year', type=int, choices=(2015, 2016, 2017))
+parser.add_argument('year', type=int, choices=(2015, 2016, 2017, 2018))
 parser.add_argument('-o', help='Force output filename', type=str)
 parser.add_argument('--fills', help='Force fill list', nargs='+', type=int)
 parser.add_argument('--debug', help='Print debug info', action='store_true')
@@ -66,7 +66,14 @@ else:
 
 logfile = pkl_file_name + '.log'
 
-if args.year == 2017:
+if args.year == 2018:
+    base_folder = '/afs/cern.ch/work/l/lhcscrub/LHC_2018_followup/'
+    child_folders = ['./']
+    fills_bmodes_file = base_folder + '/fills_and_bmodes.pkl'
+    csv_file_names = ['fill_basic_data_csvs/basic_data_fill_%d.csv',
+            'fill_bunchbybunch_data_csvs/bunchbybunch_data_fill_%d.csv']
+    filling_pattern_csv = '/afs/cern.ch/work/l/lhcscrub/LHC_fullRun2_analysis_scripts/filling_patterns_2018.csv'
+elif args.year == 2017:
     base_folder = '/afs/cern.ch/work/l/lhcscrub/LHC_2017_operation/'
     child_folders = ['./']
     fills_bmodes_file = base_folder + '/fills_and_bmodes.pkl'
