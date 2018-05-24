@@ -190,11 +190,11 @@ for ii, group_name in enumerate(group_names):
     for fig in [fig_h, fig_offeset_h]:
         fig.suptitle(group_name+' at '+moment+substring)#+'\n'+{True: 'with_dP', False: 'no_dP'}[args.with_press_drop])
 
-
+    
 def save_evol(infolder='./'):
     strfile = 'heatload'
     for fig in figs:
-        fig.savefig(infolder+'/'+strfile+'_evol_'+fig._suptitle.get_text().replace(' ', '__')+'.png',  dpi=200)
+        fig.savefig(infolder+'/'+strfile+'_evol_'+fig._suptitle.get_text().replace(' ', '__')+'.png',  dpi=300)
 
 def save_offset(infolder='./'):
     for fig in figs_offset:
@@ -204,3 +204,4 @@ def save_offset(infolder='./'):
 
 pl.show()
 
+save_evol()

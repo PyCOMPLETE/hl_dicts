@@ -14,6 +14,7 @@ from LHCMeasurementTools.LHC_Heatloads import magnet_length
 
 moment = 'stop_squeeze'
 subtract_model = False
+norm_to_length = False
 
 main_dict_0 = copy.deepcopy(main_dict)
 fontsz = 16
@@ -62,6 +63,8 @@ hl_keys = hl_keys_arcs
 model = hl_model_arcs
 get_len = get_len_arcs
 
+if not norm_to_length:
+    get_len = lambda x:1.
 
 sp = plt.subplot(1,1,1)
 sp.grid(True)
@@ -69,12 +72,12 @@ sp.set_xlim(0.4,1.3e11)
 sp.set_xlabel('Bunch intensity [p/bunch]')
 sp.set_title(title)
 if subtract_model:
-    sp.set_ylabel('Heat load from e-cloud [W/m]')
+    sp.set_ylabel('Heat load from e-cloud [W]')
 else:
-    sp.set_ylabel('Total heat load [W/m]')
+    sp.set_ylabel('Total heat load [%s]'%({True:'W/m', False:'W'}[norm_to_length]))
 
 xx = main_dict[moment]['intensity']['total']/main_dict[moment]['n_bunches']['b1']/2.
-if not subtract_model:
+if not subtract_model and norm_to_length:
     if model is hl_model_arcs:
         label = 'Imp.+SR'
     elif model is hl_model_quads:
