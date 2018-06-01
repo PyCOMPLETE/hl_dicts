@@ -149,7 +149,7 @@ def data_integration(timestamps, values, key):
     nan = np.isnan(values)
     values[nan] = 0.
     #if np.sum(nan) > 0:
-        #log_print('Fill %i: There have been nan values for var %s' % (filln,key))
+    #    log_print('Fill %i: There have been nan values for var %s' % (filln,key))
     for i in xrange(len(values)-1):
         output += (timestamps[i+1] - timestamps[i])*(values[i] + values[i+1])/2.
     return output
@@ -286,7 +286,7 @@ for filln in fills_0:
     if process_fill:
         arc_averages = {}
         for use_dP in (True, False):
-            arc_averages[use_dP] =  qf.compute_qbs_arc_avg(qbs_ob[use_dP])
+            arc_averages[use_dP] = qf.compute_qbs_arc_avg(qbs_ob[use_dP])
 
     ## Allocate objects that are used later
     if process_fill:
@@ -365,6 +365,9 @@ for filln in fills_0:
                 tot_int += this_int
             this_add_to_dict(tot_int, ['intensity', 'total'])
 
+            energy_this_time = en_ob.nearest_older_sample(tt)*1e9
+            this_add_to_dict(energy_this_time, ['energy'])
+
             # Bunch length
             tot_avg, tot_var = 0, 0
             this_blength_bx = {}
@@ -384,7 +387,7 @@ for filln in fills_0:
                 this_add_to_dict(sig, ['blength', 'b%i' % beam, 'sig'])
                 tot_avg += avg
                 tot_var += sig**2
-            this_add_to_dict(tot_avg, ['blength', 'total', 'avg'])
+            this_add_to_dict(tot_avg/2, ['blength', 'total', 'avg'])
             this_add_to_dict(np.sqrt(0.5*tot_var), ['blength', 'total', 'sig'])
 
             # Number of bunches
@@ -407,8 +410,8 @@ for filln in fills_0:
                 n_bunches = n_bunches_bx[beam]
                 sigma_t = this_blength_bx[beam]/4.
                 if n_bunches != 0 and sigma_t != 0 and not zero:
-                    imp = imp_calc.calculate_P_Wm(beam_int/n_bunches, sigma_t, fill_energy, n_bunches)
-                    sr = sr_calc.calculate_P_Wm(beam_int/n_bunches, sigma_t, fill_energy, n_bunches)
+                    imp = imp_calc.calculate_P_Wm(beam_int/n_bunches, sigma_t, energy_this_time, n_bunches)
+                    sr = sr_calc.calculate_P_Wm(beam_int/n_bunches, sigma_t, energy_this_time, n_bunches)
                 else:
                     imp, sr = 0, 0
                 tot_imp += imp
