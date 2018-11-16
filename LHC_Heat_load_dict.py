@@ -12,7 +12,7 @@ mask_dict = du.mask_dict
 def get_full_heatload_dictionary():
     iter_dict = None
     this_directory = os.path.dirname(os.path.abspath(__file__))
-    for yy in [2015, 2016, 2017]:
+    for yy in [2015, 2016, 2017, 2018]:
         #print yy
         path = this_directory + '/large_heat_load_dict_%d_latest.pkl'%yy
         with open(path, 'r') as f:

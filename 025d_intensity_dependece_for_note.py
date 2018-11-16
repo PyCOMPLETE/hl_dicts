@@ -12,7 +12,7 @@ import dict_utils as du
 
 from LHCMeasurementTools.LHC_Heatloads import magnet_length
 
-moment = 'stop_squeeze'
+moment = 'start_ramp'
 subtract_model = False
 
 main_dict_0 = copy.deepcopy(main_dict)
@@ -26,7 +26,8 @@ main_dict = mask_dict(main_dict,mask)
 
 # Heat load
 
-fig = plt.figure(3, figsize = (12,12))
+#fig = plt.figure(3, figsize = (12,12))
+fig = plt.figure(3, figsize = (7,6))
 fig.set_facecolor('w')
 
 
@@ -49,14 +50,15 @@ def get_len_triplets(key):
 
 
 for ctr, (family, title, hl_keys, model, get_len) in enumerate(zip(
-    ['arc_averages', 'all_cells', 'special_cells', 'all_cells'],
-    ['Average arc cells', 'Q6 quadrupoles', 'Special dipoles', 'Inner Triplets'],
-    [hl_keys_arcs, hl_keys_quads, hl_keys_special, hl_keys_triplets],
-    [hl_model_arcs, hl_model_quads, hl_model_arcs, hl_model_quads],
-    [get_len_arcs, get_len_quads, get_len_special, get_len_triplets]
+    ['arc_averages'], #, 'all_cells', 'special_cells', 'all_cells'],
+    ['Average arc cells'], #, 'Q6 quadrupoles', 'Special dipoles', 'Inner Triplets'],
+    [hl_keys_arcs], #, hl_keys_quads, hl_keys_special, hl_keys_triplets],
+    [hl_model_arcs], #, hl_model_quads, hl_model_arcs, hl_model_quads],
+    [get_len_arcs] #, get_len_quads, get_len_special, get_len_triplets]
 )):
     sp_ctr = ctr+1
-    sp = plt.subplot(2,2,sp_ctr)
+    # sp = plt.subplot(2,2,sp_ctr)
+    sp = plt.subplot(1,1,sp_ctr)
     sp.grid(True)
     sp.set_xlim(0.4,1.3e11)
     sp.set_xlabel('Bunch intensity [p/bunch]')
@@ -106,6 +108,6 @@ fig.subplots_adjust(bottom=.14, hspace=.35, wspace=.42)
 for fig in [fig]:
     fig.suptitle('At '+moment+'. Subtracted model: %s' % subtract_model)
 
-fig.savefig(os.path.expanduser('~/presentations/md_note_intensity_scan2/ss/evolution.png'))
+#fig.savefig(os.path.expanduser('~/presentations/md_note_intensity_scan2/ss/evolution.png'))
 
 plt.show()

@@ -42,6 +42,10 @@ parser.add_argument('--subtract_moment', help = 'Subtract heat load from specifi
 args = parser.parse_args()
 
 group_names = args.varlists
+
+# load default plot sets
+dict_hl_groups = HL.heat_loads_plot_sets
+
 # handle custom list
 if len(args.custom_vars)>0:
     group_names.append('Custom')
@@ -64,10 +68,6 @@ if args.end_filln_range is not None:
 if args.start_filln_range is not None:
     mask = hldict['filln'] >= args.start_filln_range
     hldict = du.mask_dict(hldict,mask)
-
-
-# load default plot sets
-dict_hl_groups = HL.heat_loads_plot_sets
 
 
 x_axis = hldict['filln']
@@ -188,7 +188,7 @@ for ii, group_name in enumerate(group_names):
 
 
     for fig in [fig_h, fig_offeset_h]:
-        fig.suptitle(group_name+' at '+moment+substring)#+'\n'+{True: 'with_dP', False: 'no_dP'}[args.with_press_drop])
+        fig.suptitle(group_name+' at '+moment+substring+' (%s)'%({True: 'with_dP', False: 'no_dP'}[args.with_press_drop]))#+'\n'+{True: 'with_dP', False: 'no_dP'}[args.with_press_drop])
 
     
 def save_evol(infolder='./'):
