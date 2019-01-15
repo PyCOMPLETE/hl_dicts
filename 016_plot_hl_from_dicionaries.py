@@ -37,7 +37,7 @@ parser.add_argument('--min_nbun', help='Remove fills with less than given number
 parser.add_argument('--end_filln_range', help='End of the filln range to plot', type=int)
 parser.add_argument('--start_filln_range', help='Start of the filln range to plot', type=int)
 parser.add_argument('--subtract_moment', help = 'Subtract heat load from specified moment')
-
+parser.add_argument('--binten', help="Plot bunch intensity instead of integrated heat load", action='store_true')
 
 args = parser.parse_args()
 
@@ -94,8 +94,11 @@ for ii, group_name in enumerate(group_names):
     spint = pl.subplot2grid((10,2),(0,0), rowspan=4, colspan=1, sharex=sp1)
     sp1 = spint
     spnorm = pl.subplot2grid((10,2),(5,0), rowspan=5, colspan=1, sharex=sp1)
-    sphlcell = pl.subplot2grid((10,2),(0,1), rowspan=4, colspan=1, sharex=sp1)
-    spinteg = pl.subplot2grid((10,2),(5,1), rowspan=5, colspan=1)
+    if not args.binten:
+        spinteg = pl.subplot2grid((10,2),(0,1), rowspan=4, colspan=1)
+    else:
+	spbint = pl.subplot2grid((10,2),(0,1), rowspan=4, colspan=1, sharex=sp1)
+    sphlcell = pl.subplot2grid((10,2),(5,1), rowspan=5, colspan=1, sharex=sp1)
 
 
     # figinteg_h = pl.figure(100+ii, figsize=(8, 6))
@@ -139,8 +142,10 @@ for ii, group_name in enumerate(group_names):
                 label += ' %s' % split[-1].replace('_','')
 
         # compute normalized heat load
-        normhl = hldict[moment]['heat_load']['ldb_naming'][var]/(hldict[moment]['intensity']['b1']+\
-                        hldict[moment]['intensity']['b2'])
+        normhl = \
+		hldict[moment]['heat_load']['ldb_naming'][var]/\
+		 (hldict[moment]['intensity']['b1']+\
+                 hldict[moment]['intensity']['b2'])
 
         if args.subtract_moment is not None:
             hl_subtract = hldict[ args.subtract_moment]['heat_load']['ldb_naming'][var]
@@ -155,17 +160,23 @@ for ii, group_name in enumerate(group_names):
         # plot heatload
         sphlcell.plot(x_axis, hldict[moment]['heat_load']['ldb_naming'][var]-hl_subtract, '.', color = colorcurr, markersize=markersize, label=label)
         spnorm.plot(x_axis, normhl-hl_subtract_norm, '.', color = colorcurr, markersize=markersize, label=label)
-
-        #plot integrated
-        integ_hl_this = np.cumsum(np.nan_to_num(hldict['hl_integrated']['ldb_naming'][var]))
-        spinteg.plot(integ_hl_this, normhl-hl_subtract_norm, '.', color=colorcurr, markersize=markersize, label=label)
+	if args.binten:
+	   spbint.plot(x_axis, hldict[moment]['intensity']['b1'] / hldict[moment]['n_bunches']['b1'], '.r', markersize=markersize)
+           spbint.plot(x_axis, hldict[moment]['intensity']['b2'] / hldict[moment]['n_bunches']['b2'], '.b', markersize=markersize)
+	else:
+            #plot integrated
+            integ_hl_this = np.cumsum(np.nan_to_num(hldict['hl_integrated']['ldb_naming'][var]))
+            spinteg.plot(integ_hl_this, normhl-hl_subtract_norm, '.', color=colorcurr, markersize=markersize, label=label)
 
         spoffs.plot(x_axis, hldict['hl_subtracted_offset']['ldb_naming'][var], '.', color=colorcurr, markersize=markersize, label=label)
 
-
-    spinteg.set_ylabel('Normalized heat load [W/p+]')
-    spinteg.set_xlabel('Integrated heat load [J]')
-
+    if args.binten:
+        pass
+    else:
+        spinteg.set_ylabel('Normalized heat load [W/p+]')
+        spinteg.set_xlabel('Integrated heat load [J]')
+        spinteg.ticklabel_format(style='sci', scilimits=(0,0),axis='x')
+    
     spint.set_ylabel('Number of bunches')
     spnorm.set_ylabel('Normalized heat load [W/p+]')
     sphlcell.set_ylabel('Heat load [W]')
@@ -174,10 +185,13 @@ for ii, group_name in enumerate(group_names):
 
     sphlcell.set_xlim(np.min(x_axis)+50, np.max(x_axis)+50)
 
-    spinteg.ticklabel_format(style='sci', scilimits=(0,0),axis='x')
-
-
-    for sp in [spint, sphlcell, spinteg, spnorm]:
+    splist = [spint, sphlcell, spnorm]
+    if args.binten:
+        splist.append(spbint)
+    else:
+        splist.append(spinteg)
+                
+    for sp in splist:
         sp.grid('on')
         sp.set_ylim(bottom=0)
 
