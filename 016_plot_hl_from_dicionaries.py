@@ -171,7 +171,7 @@ for ii, group_name in enumerate(group_names):
         spoffs.plot(x_axis, hldict['hl_subtracted_offset']['ldb_naming'][var], '.', color=colorcurr, markersize=markersize, label=label)
 
     if args.binten:
-        pass
+        spbint.set_ylabel('Bunch intensity [p+]')
     else:
         spinteg.set_ylabel('Normalized heat load [W/p+]')
         spinteg.set_xlabel('Integrated heat load [J]')
